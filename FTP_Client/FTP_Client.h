@@ -8,7 +8,7 @@
 class FTP_Client
 {
 private:
-	CSocket client;
+	CSocket ClientSocket;
 
 public:
 	FTP_Client();
