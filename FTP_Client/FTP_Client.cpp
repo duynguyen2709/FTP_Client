@@ -1,46 +1,25 @@
-// FTP_Client.cpp : Defines the entry point for the console application.
+// ftp_clnt_csocket.cpp : Defines the entry point for the console application.
 //
-
 #include "stdafx.h"
 #include "FTP_Client.h"
 
-#ifdef _DEBUG
-#define new DEBUG_NEW
-#endif
+vector<pair<int, string>> ResponseErrorException::errorCodeList = {};
 
-
-// The one and only application object
-
-CWinApp theApp;
-
-using namespace std;
-
-int main()
+FTP_Client::FTP_Client()
 {
-    int nRetCode = 0;
+}
 
-    HMODULE hModule = ::GetModuleHandle(nullptr);
+FTP_Client::~FTP_Client()
+{
+}
 
-    if (hModule != nullptr)
-    {
-        // initialize MFC and print and error on failure
-        if (!AfxWinInit(hModule, nullptr, ::GetCommandLine(), 0))
-        {
-            // TODO: change error code to suit your needs
-            wprintf(L"Fatal Error: MFC initialization failed\n");
-            nRetCode = 1;
-        }
-        else
-        {
-            // TODO: code your application's behavior here.
-        }
-    }
-    else
-    {
-        // TODO: change error code to suit your needs
-        wprintf(L"Fatal Error: GetModuleHandle failed\n");
-        nRetCode = 1;
-    }
-
-    return nRetCode;
+void ResponseErrorException::InitErrorCodeList()
+{
+	errorCodeList.push_back(make_pair(200, "Command okay"));
+	errorCodeList.push_back(make_pair(500, "Syntax error, command unrecognized.This may include errors such as command line too long."));
+	errorCodeList.push_back(make_pair(501, "Syntax error in parameters or arguments."));
+	errorCodeList.push_back(make_pair(202, "Command not implemented, superfluous at this site."));
+	errorCodeList.push_back(make_pair(502, "Command not implemented."));
+	errorCodeList.push_back(make_pair(503, "Bad sequence of commands."));
+	errorCodeList.push_back(make_pair(530, "Not logged in."));
 }
