@@ -9,10 +9,24 @@ class FTP_Client
 {
 private:
 	CSocket ClientSocket;
+	bool ConnectionStatus;
 
 public:
 	FTP_Client();
+
 	~FTP_Client();
+
+	bool isConnected() { return ConnectionStatus; }
+
+	bool Login(string command);
+
+	static vector<string> CommandList;
+
+	static void InitCommandList();
+
+	static bool checkCommand(string command);
+
+	void ExecuteCommand(string command);
 };
 
 class ResponseErrorException : public exception
@@ -29,7 +43,7 @@ public:
 	}
 
 	const string getErrorStringResponse() const throw() {
-		for (auto err : errorCodeList)
+		for (auto err : ErrorCodeList)
 		{
 			if (err.first == errorCode)
 				return err.second;
@@ -38,7 +52,7 @@ public:
 	}
 
 private:
-	static vector<pair<int, string>> errorCodeList;
+	static vector<pair<int, string>> ErrorCodeList;
 
 	int errorCode;
 };

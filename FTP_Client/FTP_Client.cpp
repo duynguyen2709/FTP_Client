@@ -3,24 +3,52 @@
 #include "stdafx.h"
 #include "FTP_Client.h"
 
-vector<pair<int, string>> ResponseErrorException::errorCodeList = {};
+vector<string> FTP_Client::CommandList = {};
+vector<pair<int, string>> ResponseErrorException::ErrorCodeList = {};
 
 FTP_Client::FTP_Client()
 {
-	ResponseErrorException ex;
+	ConnectionStatus = false;
+}
 
+FTP_Client::~FTP_Client()
+{
+	ClientSocket.Close();
+}
+
+bool FTP_Client::Login(string command)
+{
+	//
+	//CHECK VALID IP ADDRESS
+	//
+	string IP_Server;
+	if (command == "open")
+	{
+		cout << "To :";
+		getline(cin, IP_Server);
+	}
+	else
+		IP_Server = command.substr(5);
+
+	regex ipAddressFormat("(^([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])$)");
+
+	if (!regex_match(IP_Server, ipAddressFormat))
+	{
+		cout << "Invalid IP Address" << endl;
+		return false;
+	}
+
+	//END CHECK IP
+
+	ResponseErrorException ex;
 	try
 	{
 		// Tao socket dau tien
 		ClientSocket.Create();
 
 		// Ket noi den Server
-		if (ClientSocket.Connect(_T(server), 21) != 0)
-		{
-			cout << "Ket noi toi Server thanh cong !!!" << endl << endl;
-		}
-		else
-			return;
+		if (ClientSocket.Connect(_T(server), 21) == 0)
+			return false;
 
 		char buf[BUFSIZ + 1];
 		int tmpres, size, status;
@@ -113,25 +141,64 @@ FTP_Client::FTP_Client()
 			throw ex;
 		}
 		cout << endl << buf;
+		ConnectionStatus = true;
+		return true;
 	}
 	catch (ResponseErrorException &e)
 	{
+		ConnectionStatus = false;
 		cout << e.getErrorStringResponse() << endl;
+		return false;
 	}
+
+	return false;
 }
 
-FTP_Client::~FTP_Client()
+void FTP_Client::InitCommandList()
 {
-	ClientSocket.Close();
+	CommandList.push_back("open");
+	CommandList.push_back("ls");
+	CommandList.push_back("dir");
+	CommandList.push_back("put");
+	CommandList.push_back("get");
+	CommandList.push_back("mput");
+	CommandList.push_back("mget");
+	CommandList.push_back("cd");
+	CommandList.push_back("lcd");
+	CommandList.push_back("delete");
+	CommandList.push_back("mdelete");
+	CommandList.push_back("mkdir");
+	CommandList.push_back("rmdir");
+	CommandList.push_back("pwd");
+	CommandList.push_back("passive");
+	CommandList.push_back("quit");
+	CommandList.push_back("exit");
+}
+
+bool FTP_Client::checkCommand(string command)
+{
+	for (auto cmd : CommandList)
+		if (command == cmd)
+		{
+			return true;
+		}
+	return false;
+}
+
+void FTP_Client::ExecuteCommand(string command)
+{
+	throw std::logic_error("The method or operation is not implemented.");
 }
 
 void ResponseErrorException::InitErrorCodeList()
 {
-	errorCodeList.push_back(make_pair(200, "Command okay"));
-	errorCodeList.push_back(make_pair(500, "Syntax error, command unrecognized.This may include errors such as command line too long."));
-	errorCodeList.push_back(make_pair(501, "Syntax error in parameters or arguments."));
-	errorCodeList.push_back(make_pair(202, "Command not implemented, superfluous at this site."));
-	errorCodeList.push_back(make_pair(502, "Command not implemented."));
-	errorCodeList.push_back(make_pair(503, "Bad sequence of commands."));
-	errorCodeList.push_back(make_pair(530, "Not logged in."));
+	ErrorCodeList.push_back(make_pair(0, "Not connected"));
+	ErrorCodeList.push_back(make_pair(1, "Invalid command"));
+	ErrorCodeList.push_back(make_pair(200, "Command okay"));
+	ErrorCodeList.push_back(make_pair(500, "Syntax error, command unrecognized.This may include errors such as command line too long."));
+	ErrorCodeList.push_back(make_pair(501, "Syntax error in parameters or arguments."));
+	ErrorCodeList.push_back(make_pair(202, "Command not implemented, superfluous at this site."));
+	ErrorCodeList.push_back(make_pair(502, "Command not implemented."));
+	ErrorCodeList.push_back(make_pair(503, "Bad sequence of commands."));
+	ErrorCodeList.push_back(make_pair(530, "Not logged in."));
 }
