@@ -11,6 +11,8 @@ private:
 	CSocket ClientSocket;
 	bool ConnectionStatus;
 
+	bool isLegitIPAddress(string command);
+
 public:
 	FTP_Client();
 

@@ -142,6 +142,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <Text Include="CommandList.txt" />
+    <Text Include="ErrorCodeList.txt" />
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>

@@ -6,6 +6,29 @@
 vector<string> FTP_Client::CommandList = {};
 vector<pair<int, string>> ResponseErrorException::ErrorCodeList = {};
 
+bool FTP_Client::isLegitIPAddress(string command)
+{
+	string IP_Server;
+
+	if (command == "open" || command == "ftp")
+	{
+		cout << "To :";
+		getline(cin, IP_Server);
+	}
+	else
+	{
+		int pos = command.find_first_of(' ');
+		IP_Server = command.substr(pos + 1);
+	}
+
+	regex ipAddressFormat("(^([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])$)");
+
+	if (!regex_match(IP_Server, ipAddressFormat))
+		return false;
+
+	return true;
+}
+
 FTP_Client::FTP_Client()
 {
 	ConnectionStatus = false;
@@ -18,27 +41,11 @@ FTP_Client::~FTP_Client()
 
 bool FTP_Client::Login(string command)
 {
-	//
-	//CHECK VALID IP ADDRESS
-	//
-	string IP_Server;
-	if (command == "open")
+	if (!isLegitIPAddress(command))
 	{
-		cout << "To :";
-		getline(cin, IP_Server);
-	}
-	else
-		IP_Server = command.substr(5);
-
-	regex ipAddressFormat("(^([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])$)");
-
-	if (!regex_match(IP_Server, ipAddressFormat))
-	{
-		cout << "Invalid IP Address" << endl;
+		cout << "Invalid IP Address." << endl;
 		return false;
 	}
-
-	//END CHECK IP
 
 	ResponseErrorException ex;
 	try
@@ -156,23 +163,15 @@ bool FTP_Client::Login(string command)
 
 void FTP_Client::InitCommandList()
 {
-	CommandList.push_back("open");
-	CommandList.push_back("ls");
-	CommandList.push_back("dir");
-	CommandList.push_back("put");
-	CommandList.push_back("get");
-	CommandList.push_back("mput");
-	CommandList.push_back("mget");
-	CommandList.push_back("cd");
-	CommandList.push_back("lcd");
-	CommandList.push_back("delete");
-	CommandList.push_back("mdelete");
-	CommandList.push_back("mkdir");
-	CommandList.push_back("rmdir");
-	CommandList.push_back("pwd");
-	CommandList.push_back("passive");
-	CommandList.push_back("quit");
-	CommandList.push_back("exit");
+	ifstream cin("CommandList.txt");
+	string cmd;
+
+	while (!cin.eof())
+	{
+		cin >> cmd;
+		CommandList.push_back(cmd);
+	}
+	cin.clear();
 }
 
 bool FTP_Client::checkCommand(string command)
@@ -192,13 +191,16 @@ void FTP_Client::ExecuteCommand(string command)
 
 void ResponseErrorException::InitErrorCodeList()
 {
-	ErrorCodeList.push_back(make_pair(0, "Not connected"));
-	ErrorCodeList.push_back(make_pair(1, "Invalid command"));
-	ErrorCodeList.push_back(make_pair(200, "Command okay"));
-	ErrorCodeList.push_back(make_pair(500, "Syntax error, command unrecognized.This may include errors such as command line too long."));
-	ErrorCodeList.push_back(make_pair(501, "Syntax error in parameters or arguments."));
-	ErrorCodeList.push_back(make_pair(202, "Command not implemented, superfluous at this site."));
-	ErrorCodeList.push_back(make_pair(502, "Command not implemented."));
-	ErrorCodeList.push_back(make_pair(503, "Bad sequence of commands."));
-	ErrorCodeList.push_back(make_pair(530, "Not logged in."));
+	ifstream cin("ErrorCodeList.txt");
+	int code;
+	string err;
+
+	while (!cin.eof())
+	{
+		cin >> code;
+		getline(cin, err);
+		ErrorCodeList.push_back(make_pair(code, err));
+	}
+
+	cin.clear();
 }

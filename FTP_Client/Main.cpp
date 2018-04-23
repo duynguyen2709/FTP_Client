@@ -43,21 +43,21 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 
 			FTP_Client client;
 			ResponseErrorException ex;
+			string command;
 
 			cout << "Enter FTP command. \"?\" or \"help\" for command help" << endl;
 		enter: cout << ftp_str;
 
 			try {
-				string command;
 				getline(cin, command);
 				transform(command.begin(), command.end(), command.begin(), ::tolower);
 
 				//if not connected to server
-				//then check if command = "open" to establish connection,
+				//then check if command = "open" or "ftp" to establish connection,
 				//otherwise every other command can not be executed.
 				if (client.isConnected() == false)
 				{
-					if (command.find("open") != string::npos)
+					if (command.find("open") != string::npos || command.find("ftp") != string::npos)
 					{
 						bool status = client.Login(command);
 						if (!status)

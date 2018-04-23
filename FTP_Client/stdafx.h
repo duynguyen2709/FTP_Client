@@ -27,6 +27,7 @@
 #endif // _AFX_NO_AFXCMN_SUPPORT
 
 #include <iostream>
+#include <fstream>
 #include <afxsock.h>
 #include <exception>
 #include <utility>
