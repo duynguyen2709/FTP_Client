@@ -31,7 +31,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 			// Khoi tao thu vien Socket
 			if (AfxSocketInit() == FALSE)
 			{
-				cout << "Khong the khoi tao Socket Libraray";
+				cout << "Khong the khoi tao Socket Library";
 				return FALSE;
 			}
 
@@ -46,48 +46,57 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 			string command;
 
 			cout << "Enter FTP command. \"?\" or \"help\" for command help" << endl;
-		enter: cout << ftp_str;
+			while (1)
+			{
+			enter: cout << ftp_str;
 
-			try {
-				getline(cin, command);
-				transform(command.begin(), command.end(), command.begin(), ::tolower);
+				try {
+					getline(cin, command);
+					transform(command.begin(), command.end(), command.begin(), ::tolower);
 
-				//if not connected to server
-				//then check if command = "open" or "ftp" to establish connection,
-				//otherwise every other command can not be executed.
-				if (client.isConnected() == false)
-				{
-					if (command.find("open") != string::npos || command.find("ftp") != string::npos)
+					if (command == "quit" || command == "exit")
 					{
-						bool status = client.Login(command);
-						if (!status)
-						{
-							ex.setErrorCode(530);
-							throw ex;
-						}
+						exit(0);
 					}
-					else {
 
-						//
-						//check if command is legit
-						//
-						if (FTP_Client::checkCommand(command))
+					//if not connected to server
+					//then check if command = "open" or "ftp" to establish connection,
+					//otherwise every other command can not be executed.
+					else if (client.isConnected() == false)
+					{
+						if (command.find("open") != string::npos || command.find("ftp") != string::npos)
 						{
-							ex.setErrorCode(0);
-							throw ex;
+							bool status = client.Login(command);
+							if (!status)
+							{
+								ex.setErrorCode(530);
+								throw ex;
+							}
 						}
+
 						else {
-							ex.setErrorCode(1);
-							throw ex;
+
+							//
+							//check if command is legit
+							//
+							if (FTP_Client::checkCommand(command))
+							{
+								ex.setErrorCode(0);
+								throw ex;
+							}
+							else {
+								ex.setErrorCode(1);
+								throw ex;
+							}
 						}
 					}
+					else
+						client.ExecuteCommand(command);
 				}
-				else
-					client.ExecuteCommand(command);
-			}
-			catch (ResponseErrorException &e) {
-				cout << e.getErrorStringResponse() << endl;
-				goto enter;
+				catch (ResponseErrorException &e) {
+					cout << e.getErrorStringResponse() << endl;
+					goto enter;
+				}
 			}
 		}
 	}

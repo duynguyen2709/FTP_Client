@@ -149,6 +149,10 @@ bool FTP_Client::Login(string command)
 		}
 		cout << endl << buf;
 		ConnectionStatus = true;
+
+		cin.ignore();
+		cin.clear();
+
 		return true;
 	}
 	catch (ResponseErrorException &e)
@@ -186,7 +190,20 @@ bool FTP_Client::checkCommand(string command)
 
 void FTP_Client::ExecuteCommand(string command)
 {
-	throw std::logic_error("The method or operation is not implemented.");
+	char buf[BUFSIZ + 1];
+	int tmpres;
+
+	if (command == "dir" || command == "ls")
+	{
+		strcpy(buf, "LIST\r\n");
+		tmpres = ClientSocket.Send(buf, strlen(buf), 0);
+
+		memset(buf, 0, sizeof buf);
+		tmpres = ClientSocket.Receive(buf, BUFSIZ, 0);
+
+		cout << buf;
+	}
+	return;
 }
 
 void ResponseErrorException::InitErrorCodeList()

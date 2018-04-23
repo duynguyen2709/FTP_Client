@@ -35,7 +35,13 @@
 #include <vector>
 #include <algorithm>
 #include <regex>
+#include <limits>
+#include <ios>
+#include <windows.h>
+#include <wininet.h>
 
 using namespace std;
+
+#pragma comment(lib, "wininet")
 
 // TODO: reference additional headers your program requires here
