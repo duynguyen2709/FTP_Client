@@ -127,7 +127,8 @@ public:
 
 	~IHandleCommand() {	};
 
-	void cd(string command);
 	void lcd(string command);
 	void pwd();
+
+	void directoryCommands(string command, const int commandLength, const char * format);
 };

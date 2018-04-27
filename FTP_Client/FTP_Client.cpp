@@ -38,6 +38,14 @@ Command FTP_Client::commandValue(string command)
 	{
 		cmd = LS;
 	}
+	else if (command.find("mkdir") != string::npos)
+	{
+		cmd = MKDIR;
+	}
+	else if (command.find("rmdir") != string::npos)
+	{
+		cmd = RMDIR;
+	}
 	else if (command.find("dir") != string::npos)
 	{
 		cmd = DIR;
@@ -75,14 +83,6 @@ Command FTP_Client::commandValue(string command)
 		cmd = _DELETE;
 	}
 
-	else if (command.find("mkdir") != string::npos)
-	{
-		cmd = MKDIR;
-	}
-	else if (command.find("rmdir") != string::npos)
-	{
-		cmd = RMDIR;
-	}
 	else if (command.find("pwd") != string::npos)
 	{
 		cmd = PWD;
@@ -294,7 +294,9 @@ void FTP_Client::ExecuteCommand(string command)
 	case MGET:
 		break;
 	case CD:
-		commandHandler->cd(command);
+
+		//commandHandler->cd(command);
+		commandHandler->directoryCommands(command, 2, "CWD %s\r\n");
 		break;
 	case LCD:
 		commandHandler->lcd(command);
@@ -304,8 +306,10 @@ void FTP_Client::ExecuteCommand(string command)
 	case MDELETE:
 		break;
 	case MKDIR:
+		commandHandler->directoryCommands(command, 5, "XMKD %s\r\n");
 		break;
 	case RMDIR:
+		commandHandler->directoryCommands(command, 5, "XRMD %s\r\n");
 		break;
 	case PWD:
 		commandHandler->pwd();
@@ -333,30 +337,6 @@ void ResponseErrorException::InitErrorCodeList()
 	}
 
 	cin.clear();
-}
-
-void IHandleCommand::cd(string command)
-{
-	char buf[BUFSIZ + 1];
-	char dir[BUFSIZ];
-	int resCode = 0;
-
-	if (command.find_first_of(' ') == string::npos) {
-		cout << "Remote directory :";
-		gets_s(dir, 255);
-	}
-	else {
-		string temp = command.substr(3);
-		strcpy(dir, temp.c_str());
-	}
-
-	sprintf(buf, "CWD %s\r\n", dir);
-	resCode = ClientSocket.Send(buf, strlen(buf), 0);
-
-	memset(buf, 0, sizeof buf);
-	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
-
-	cout << buf;
 }
 
 void IHandleCommand::lcd(string command)
@@ -391,6 +371,8 @@ void IHandleCommand::lcd(string command)
 	}
 
 	if (_chdir(newDir.c_str())) {
+
+		//handling error
 		switch (errno)
 		{
 		case ENOENT:
@@ -416,6 +398,38 @@ void IHandleCommand::pwd()
 
 	sprintf(buf, "XPWD\r\n");
 
+	resCode = ClientSocket.Send(buf, strlen(buf), 0);
+
+	memset(buf, 0, sizeof buf);
+	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+
+	cout << buf;
+}
+
+void IHandleCommand::directoryCommands(string command, const int commandLength, const char * format)
+{
+	char buf[BUFSIZ + 1];
+
+	string dir;
+
+	int resCode = 0;
+
+	int space = command.find_first_of(' ');
+	if (space == string::npos) {
+		cout << "Directory name :";
+		getline(cin, dir);
+	}
+	else {
+		dir = command.substr(commandLength + 1);
+	}
+	int spaceCount = count(dir.begin(), dir.end(), ' ');
+	if (spaceCount >= 1)
+	{
+		int pos = dir.find_first_of(' ');
+		dir = dir.substr(0, pos);
+	}
+
+	sprintf(buf, format, dir.c_str());
 	resCode = ClientSocket.Send(buf, strlen(buf), 0);
 
 	memset(buf, 0, sizeof buf);
