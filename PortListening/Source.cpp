@@ -30,17 +30,17 @@ int wmain(void)
 	std::thread t3(createSocket, ip3);
 	if (t1.joinable())
 	{
-		t1.join();
+	t1.join();
 	}
 	if (t2.joinable())
 	{
-		t2.join();
+	t2.join();
 	}
 	if (t3.joinable())
 	{
-		t3.join();
+	t3.join();
 	}
-*/
+	*/
 	return 0;
 }
 int createSocket(char *ip) {

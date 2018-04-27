@@ -5,7 +5,7 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FTP_Client", "FTP_Client\FTP_Client.vcxproj", "{92BAEE3C-D998-4973-B013-676DE0AFEE8A}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ConsoleApplication2", "ConsoleApplication2\ConsoleApplication2.vcxproj", "{E3182DE8-ADBA-4700-A808-6C563E758309}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PortListening", "PortListening\PortListening.vcxproj", "{AB1C36E1-B4A5-43A5-B461-F240F6D50F4E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,14 +23,14 @@ Global
 		{92BAEE3C-D998-4973-B013-676DE0AFEE8A}.Release|x64.Build.0 = Release|x64
 		{92BAEE3C-D998-4973-B013-676DE0AFEE8A}.Release|x86.ActiveCfg = Release|Win32
 		{92BAEE3C-D998-4973-B013-676DE0AFEE8A}.Release|x86.Build.0 = Release|Win32
-		{E3182DE8-ADBA-4700-A808-6C563E758309}.Debug|x64.ActiveCfg = Debug|x64
-		{E3182DE8-ADBA-4700-A808-6C563E758309}.Debug|x64.Build.0 = Debug|x64
-		{E3182DE8-ADBA-4700-A808-6C563E758309}.Debug|x86.ActiveCfg = Debug|Win32
-		{E3182DE8-ADBA-4700-A808-6C563E758309}.Debug|x86.Build.0 = Debug|Win32
-		{E3182DE8-ADBA-4700-A808-6C563E758309}.Release|x64.ActiveCfg = Release|x64
-		{E3182DE8-ADBA-4700-A808-6C563E758309}.Release|x64.Build.0 = Release|x64
-		{E3182DE8-ADBA-4700-A808-6C563E758309}.Release|x86.ActiveCfg = Release|Win32
-		{E3182DE8-ADBA-4700-A808-6C563E758309}.Release|x86.Build.0 = Release|Win32
+		{AB1C36E1-B4A5-43A5-B461-F240F6D50F4E}.Debug|x64.ActiveCfg = Debug|x64
+		{AB1C36E1-B4A5-43A5-B461-F240F6D50F4E}.Debug|x64.Build.0 = Debug|x64
+		{AB1C36E1-B4A5-43A5-B461-F240F6D50F4E}.Debug|x86.ActiveCfg = Debug|Win32
+		{AB1C36E1-B4A5-43A5-B461-F240F6D50F4E}.Debug|x86.Build.0 = Debug|Win32
+		{AB1C36E1-B4A5-43A5-B461-F240F6D50F4E}.Release|x64.ActiveCfg = Release|x64
+		{AB1C36E1-B4A5-43A5-B461-F240F6D50F4E}.Release|x64.Build.0 = Release|x64
+		{AB1C36E1-B4A5-43A5-B461-F240F6D50F4E}.Release|x86.ActiveCfg = Release|Win32
+		{AB1C36E1-B4A5-43A5-B461-F240F6D50F4E}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
