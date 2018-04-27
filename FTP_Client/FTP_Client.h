@@ -128,5 +128,6 @@ public:
 	~IHandleCommand() {	};
 
 	void cd(string command);
+	void lcd(string command);
 	void pwd();
 };

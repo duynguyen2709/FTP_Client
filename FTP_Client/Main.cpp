@@ -10,6 +10,34 @@ CWinApp theApp;
 
 #define ftp_str "ftp>"
 
+inline string FormatCommand(string command)
+{
+	//DELETE SPACES AT END
+	int pos = command.size() - 1;
+	while (command[pos] == ' ') {
+		command.erase(pos);
+		pos--;
+	}
+
+	//DELETE SPACES AT START
+	pos = 0;
+	while (command[pos] == ' ') {
+		command.erase(pos);
+		pos++;
+	}
+
+	//FORMAT COMMAND TO LOWERCASE
+	int spacePos = command.find_first_of(' ');
+
+	if (spacePos != string::npos) {
+		for (int i = 0; i < spacePos; i++)
+			command[i] = tolower(command[i]);
+	}
+	else transform(command.begin(), command.end(), command.begin(), ::tolower);
+
+	return command;
+}
+
 int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 {
 	int nRetCode = 0;
@@ -51,7 +79,8 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 			enter: cout << ftp_str;
 				try {
 					getline(cin, command);
-					transform(command.begin(), command.end(), command.begin(), ::tolower);
+
+					command = FormatCommand(command);
 
 					if (command == "quit" || command == "exit")
 					{

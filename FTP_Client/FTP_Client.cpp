@@ -2,6 +2,7 @@
 //
 #include "stdafx.h"
 #include "FTP_Client.h"
+#include <direct.h>
 
 vector<string> FTP_Client::CommandList = {};
 vector<pair<int, string>> ResponseErrorException::ErrorCodeList = {};
@@ -41,38 +42,39 @@ Command FTP_Client::commandValue(string command)
 	{
 		cmd = DIR;
 	}
-	else if (command.find("put") != string::npos)
-	{
-		cmd = PUT;
-	}
-	else if (command.find("get") != string::npos)
-	{
-		cmd = GET;
-	}
 	else if (command.find("mput") != string::npos)
 	{
 		cmd = MPUT;
+	}
+	else if (command.find("put") != string::npos)
+	{
+		cmd = PUT;
 	}
 	else if (command.find("mget") != string::npos)
 	{
 		cmd = MGET;
 	}
-	else if (command.find("cd") != string::npos)
+	else if (command.find("get") != string::npos)
 	{
-		cmd = CD;
+		cmd = GET;
 	}
 	else if (command.find("lcd") != string::npos)
 	{
 		cmd = LCD;
 	}
-	else if (command.find("delete") != string::npos)
+	else if (command.find("cd") != string::npos)
 	{
-		cmd = _DELETE;
+		cmd = CD;
 	}
 	else if (command.find("mdelete") != string::npos)
 	{
 		cmd = MDELETE;
 	}
+	else if (command.find("delete") != string::npos)
+	{
+		cmd = _DELETE;
+	}
+
 	else if (command.find("mkdir") != string::npos)
 	{
 		cmd = MKDIR;
@@ -295,6 +297,7 @@ void FTP_Client::ExecuteCommand(string command)
 		commandHandler->cd(command);
 		break;
 	case LCD:
+		commandHandler->lcd(command);
 		break;
 	case _DELETE:
 		break;
@@ -354,6 +357,55 @@ void IHandleCommand::cd(string command)
 	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
 
 	cout << buf;
+}
+
+void IHandleCommand::lcd(string command)
+{
+	char buf[BUFSIZ];
+
+	//If there's no argument,
+	//Then set local directory to user default home directory
+	if (command.find_first_of(' ') == string::npos) {
+		chdir(getenv("USERPROFILE"));
+		cout << "Local directory now " << getcwd(buf, BUFSIZ) << endl;
+		return;
+	}
+
+	//
+	//else
+	//check if directory exists
+	//then change to new directory
+	//else print not found directory
+	//
+	string newDir = command.substr(4);
+
+	wstring stemp = wstring(newDir.begin(), newDir.end());
+	LPCWSTR dir = stemp.c_str();
+
+	DWORD dwAttrib = GetFileAttributes(dir);
+
+	if (!(dwAttrib != INVALID_FILE_ATTRIBUTES &&
+		(dwAttrib & FILE_ATTRIBUTE_DIRECTORY))) {
+		cout << newDir << ": File not found" << endl;
+		return;
+	}
+
+	if (_chdir(newDir.c_str())) {
+		switch (errno)
+		{
+		case ENOENT:
+			cout << "Unable to locate the directory: " << newDir << endl;
+			break;
+		case EINVAL:
+			cout << "Invalid buffer." << endl;
+			break;
+		default:
+			cout << "Unknown error." << endl;
+		}
+		return;
+	}
+
+	cout << "Local directory now " << getcwd(buf, BUFSIZ) << endl;
 }
 
 void IHandleCommand::pwd()
