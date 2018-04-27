@@ -36,15 +36,42 @@ struct My_IP_Address {
 		x4 = stoi(str.substr(pos3 + 1));
 	}
 };
+
+enum Command {
+	LS,
+	DIR,
+	PUT,
+	GET,
+	MPUT,
+	MGET,
+	CD,
+	LCD,
+	_DELETE,
+	MDELETE,
+	MKDIR,
+	RMDIR,
+	PWD,
+	PASSIVE,
+	QUIT,
+	EXIT
+};
+
 class FTP_Client
 {
-private:
+protected:
+
 	CSocket ClientSocket;
+
+private:
+
 	bool ConnectionStatus;
 
 	bool isLegitIPAddress(string command);
 
+	Command commandValue(string command);
+
 public:
+
 	FTP_Client();
 
 	~FTP_Client();
@@ -88,4 +115,18 @@ private:
 	static vector<pair<int, string>> ErrorCodeList;
 
 	int errorCode;
+};
+
+class IHandleCommand : public FTP_Client {
+private:
+	ResponseErrorException ex;
+
+public:
+
+	IHandleCommand() { };
+
+	~IHandleCommand() {	};
+
+	void cd(string command);
+	void pwd();
 };

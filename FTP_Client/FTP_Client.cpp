@@ -29,6 +29,70 @@ bool FTP_Client::isLegitIPAddress(string command)
 	return true;
 }
 
+Command FTP_Client::commandValue(string command)
+{
+	Command cmd;
+
+	if (command.find("ls") != string::npos)
+	{
+		cmd = LS;
+	}
+	else if (command.find("dir") != string::npos)
+	{
+		cmd = DIR;
+	}
+	else if (command.find("put") != string::npos)
+	{
+		cmd = PUT;
+	}
+	else if (command.find("get") != string::npos)
+	{
+		cmd = GET;
+	}
+	else if (command.find("mput") != string::npos)
+	{
+		cmd = MPUT;
+	}
+	else if (command.find("mget") != string::npos)
+	{
+		cmd = MGET;
+	}
+	else if (command.find("cd") != string::npos)
+	{
+		cmd = CD;
+	}
+	else if (command.find("lcd") != string::npos)
+	{
+		cmd = LCD;
+	}
+	else if (command.find("delete") != string::npos)
+	{
+		cmd = _DELETE;
+	}
+	else if (command.find("mdelete") != string::npos)
+	{
+		cmd = MDELETE;
+	}
+	else if (command.find("mkdir") != string::npos)
+	{
+		cmd = MKDIR;
+	}
+	else if (command.find("rmdir") != string::npos)
+	{
+		cmd = RMDIR;
+	}
+	else if (command.find("pwd") != string::npos)
+	{
+		cmd = PWD;
+	}
+	else if (command.find("passive") != string::npos)
+	{
+		cmd = PASSIVE;
+	}
+
+	return cmd;
+}
+
 FTP_Client::FTP_Client()
 {
 	ConnectionStatus = false;
@@ -190,18 +254,64 @@ bool FTP_Client::checkCommand(string command)
 
 void FTP_Client::ExecuteCommand(string command)
 {
-	char buf[BUFSIZ + 1];
+	/*char buf[BUFSIZ + 1];
 	int tmpres;
 
-	if (command == "dir" || command == "ls")
+	My_IP_Address ipAddress;
+
+	sprintf(buf, "PORT %d,%d,%d,%d,205,220\r\n", ipAddress.x1, ipAddress.x2, ipAddress.x3, ipAddress.x4);
+	tmpres = ClientSocket.Send(buf, strlen(buf), 0);
+
+	memset(buf, 0, sizeof buf);
+	tmpres = ClientSocket.Receive(buf, BUFSIZ, 0);
+	cout << buf << endl;
+
+	strcpy(buf, "LIST\r\n");
+	tmpres = ClientSocket.Send(buf, strlen(buf), 0);
+
+	memset(buf, 0, sizeof buf);
+	tmpres = ClientSocket.Receive(buf, BUFSIZ, 0);
+	cout << buf << endl;*/
+
+	Command cmd = commandValue(command);
+
+	IHandleCommand *commandHandler = static_cast<IHandleCommand *>(&(*this));
+
+	switch (cmd)
 	{
-		strcpy(buf, "LIST\r\n");
-		tmpres = ClientSocket.Send(buf, strlen(buf), 0);
+	case LS:
+		break;
+	case DIR:
+		break;
+	case PUT:
+		break;
+	case GET:
+		break;
+	case MPUT:
+		break;
+	case MGET:
+		break;
+	case CD:
+		commandHandler->cd(command);
+		break;
+	case LCD:
+		break;
+	case _DELETE:
+		break;
+	case MDELETE:
+		break;
+	case MKDIR:
+		break;
+	case RMDIR:
+		break;
+	case PWD:
+		commandHandler->pwd();
+		break;
+	case PASSIVE:
+		break;
 
-		memset(buf, 0, sizeof buf);
-		tmpres = ClientSocket.Receive(buf, BUFSIZ, 0);
-
-		cout << buf;
+	default:
+		break;
 	}
 	return;
 }
@@ -220,4 +330,44 @@ void ResponseErrorException::InitErrorCodeList()
 	}
 
 	cin.clear();
+}
+
+void IHandleCommand::cd(string command)
+{
+	char buf[BUFSIZ + 1];
+	char dir[BUFSIZ];
+	int resCode = 0;
+
+	if (command.find_first_of(' ') == string::npos) {
+		cout << "Remote directory :";
+		gets_s(dir, 255);
+	}
+	else {
+		string temp = command.substr(3);
+		strcpy(dir, temp.c_str());
+	}
+
+	sprintf(buf, "CWD %s\r\n", dir);
+	resCode = ClientSocket.Send(buf, strlen(buf), 0);
+
+	memset(buf, 0, sizeof buf);
+	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+
+	cout << buf;
+}
+
+void IHandleCommand::pwd()
+{
+	char buf[255];
+
+	int resCode;
+
+	sprintf(buf, "XPWD\r\n");
+
+	resCode = ClientSocket.Send(buf, strlen(buf), 0);
+
+	memset(buf, 0, sizeof buf);
+	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+
+	cout << buf;
 }

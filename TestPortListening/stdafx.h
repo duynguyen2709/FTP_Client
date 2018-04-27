@@ -16,10 +16,6 @@
 #define VC_EXTRALEAN            // Exclude rarely-used stuff from Windows headers
 #endif
 
-#ifndef UNICODE
-#define UNICODE
-#endif
-
 #include <afx.h>
 #include <afxwin.h>         // MFC core and standard components
 #include <afxext.h>         // MFC extensions
@@ -31,26 +27,7 @@
 #endif // _AFX_NO_AFXCMN_SUPPORT
 
 #include <iostream>
-#include <fstream>
-#include <afxsock.h>
-#include <exception>
-#include <utility>
-#include <string>
-#include <vector>
-#include <algorithm>
-#include <regex>
-#include <limits>
-#include <ios>
-#include <windows.h>
-#include <wininet.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <stdlib.h>
-#include <thread>
 
-using namespace std;
 
-#pragma comment(lib, "wininet")
-#pragma comment(lib, "Ws2_32.lib")
 
 // TODO: reference additional headers your program requires here

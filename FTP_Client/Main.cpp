@@ -49,7 +49,6 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 			while (1)
 			{
 			enter: cout << ftp_str;
-
 				try {
 					getline(cin, command);
 					transform(command.begin(), command.end(), command.begin(), ::tolower);
