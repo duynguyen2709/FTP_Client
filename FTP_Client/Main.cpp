@@ -62,6 +62,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 				cout << "Khong the khoi tao Socket Library";
 				return FALSE;
 			}
+			srand(time(NULL));
 
 			//
 			//START OF MAIN CODE
@@ -118,8 +119,9 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 							}
 						}
 					}
-					else
+					else {
 						client.ExecuteCommand(command);
+					}
 				}
 				catch (ResponseErrorException &e) {
 					cout << e.getErrorStringResponse() << endl;

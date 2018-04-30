@@ -2,6 +2,11 @@
 
 #include "resource.h"
 #include "stdafx.h"
+#include <winsock2.h>
+#include <stdio.h>
+#include <windows.h>
+#pragma comment(lib, "Ws2_32.lib")
+#include <corecrt_io.h>
 
 #define server "103.207.36.66"
 
@@ -56,6 +61,8 @@ enum Command {
 	EXIT
 };
 
+class IHandleCommand;
+
 class FTP_Client
 {
 protected:
@@ -69,6 +76,8 @@ private:
 	bool isLegitIPAddress(string command);
 
 	Command commandValue(string command);
+
+	IHandleCommand *CommandHandler;
 
 public:
 
@@ -122,12 +131,33 @@ class IHandleCommand : public FTP_Client {
 private:
 	ResponseErrorException ex;
 
+	SOCKET createListeningSocket(int port);
+
+	static vector<int> PortUsed;
+
+	int randomPort() {
+		int port;
+	randomPort: port = 52700 + rand() % 2000;
+
+		for (int i = 0; i < PortUsed.size(); i++)
+		{
+			if (PortUsed[i] == port)
+				goto randomPort;
+		}
+
+		PortUsed.push_back(port);
+		return port;
+	}
+
+	int portCommand();
+
 public:
 
 	IHandleCommand() { };
 
 	~IHandleCommand() {	};
 
+	void dir(string command);
 	void lcd(string command);
 	void pwd();
 	void serverSideCommands(string command, string noti, const int commandLength, const char * format);

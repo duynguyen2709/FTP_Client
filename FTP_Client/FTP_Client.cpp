@@ -5,6 +5,7 @@
 #include <direct.h>
 
 vector<string> FTP_Client::CommandList = {};
+vector<int> IHandleCommand::PortUsed = {};
 vector<pair<int, string>> ResponseErrorException::ErrorCodeList = {};
 
 bool FTP_Client::isLegitIPAddress(string command)
@@ -98,6 +99,7 @@ Command FTP_Client::commandValue(string command)
 FTP_Client::FTP_Client()
 {
 	ConnectionStatus = false;
+	CommandHandler = static_cast<IHandleCommand *>(&(*this));
 }
 
 FTP_Client::~FTP_Client()
@@ -267,13 +269,11 @@ void FTP_Client::ExecuteCommand(string command)
 {
 	Command cmd = commandValue(command);
 
-	IHandleCommand *commandHandler = static_cast<IHandleCommand *>(&(*this));
-
 	switch (cmd)
 	{
 	case LS:
-		break;
 	case DIR:
+		CommandHandler->dir(command);
 		break;
 	case PUT:
 		break;
@@ -284,24 +284,24 @@ void FTP_Client::ExecuteCommand(string command)
 	case MGET:
 		break;
 	case CD:
-		commandHandler->serverSideCommands(command, "Remote directory:", 2, "CWD %s\r\n");
+		CommandHandler->serverSideCommands(command, "Remote directory:", 2, "CWD %s\r\n");
 		break;
 	case LCD:
-		commandHandler->lcd(command);
+		CommandHandler->lcd(command);
 		break;
 	case _DELETE:
-		commandHandler->serverSideCommands(command, "Remote file: ", 4, "DELE %s\r\n");
+		CommandHandler->serverSideCommands(command, "Remote file: ", 4, "DELE %s\r\n");
 		break;
 	case MDELETE:
 		break;
 	case MKDIR:
-		commandHandler->serverSideCommands(command, "Directory name: ", 5, "XMKD %s\r\n");
+		CommandHandler->serverSideCommands(command, "Directory name: ", 5, "XMKD %s\r\n");
 		break;
 	case RMDIR:
-		commandHandler->serverSideCommands(command, "Directory name: ", 5, "XRMD %s\r\n");
+		CommandHandler->serverSideCommands(command, "Directory name: ", 5, "XRMD %s\r\n");
 		break;
 	case PWD:
-		commandHandler->pwd();
+		CommandHandler->pwd();
 		break;
 	case PASSIVE:
 		break;
@@ -325,6 +325,113 @@ void ResponseErrorException::InitErrorCodeList()
 	ErrorCodeList.push_back(make_pair(503, "Bad sequence of commands."));
 	ErrorCodeList.push_back(make_pair(530, "Not logged in."));
 	ErrorCodeList.push_back(make_pair(550, "Requested action not taken."));
+}
+
+SOCKET IHandleCommand::createListeningSocket(int port)
+{
+	WSADATA wsaData;
+	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (iResult != NO_ERROR) {
+		wprintf(L"WSAStartup failed with error: %ld\n", iResult);
+		return NULL;
+	}
+
+	SOCKET ListenSocket;
+	ListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (ListenSocket == INVALID_SOCKET) {
+		wprintf(L"Created Listening Socket failed with error: %ld\n", WSAGetLastError());
+		WSACleanup();
+		return NULL;
+	}
+
+	sockaddr_in service;
+	service.sin_family = AF_INET;
+	service.sin_addr.s_addr = INADDR_ANY;
+	service.sin_port = htons((u_short)port);
+
+	if (::bind(ListenSocket,
+		(SOCKADDR *)& service, sizeof(service)) == SOCKET_ERROR) {
+		wprintf(L"Bind failed with error: %ld\n", WSAGetLastError());
+		closesocket(ListenSocket);
+		WSACleanup();
+		return NULL;
+	}
+
+	if (listen(ListenSocket, 1) == SOCKET_ERROR) {
+		wprintf(L"Listen failed with error: %ld\n", WSAGetLastError());
+		closesocket(ListenSocket);
+		WSACleanup();
+		return NULL;
+	}
+
+	return ListenSocket;
+}
+
+int IHandleCommand::portCommand()
+{
+	My_IP_Address ipAddress;
+	char buf[BUFSIZ + 1];
+
+	int resCode;
+
+	int port = randomPort();
+	int temp = port / 256;
+
+	sprintf(buf, "PORT %d,%d,%d,%d,%d,%d\r\n", ipAddress.x1, ipAddress.x2, ipAddress.x3, ipAddress.x4, temp, port - temp * 256);
+
+	resCode = ClientSocket.Send(buf, strlen(buf), 0);
+
+	memset(buf, 0, sizeof buf);
+	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+	cout << buf;
+
+	return port;
+}
+
+void IHandleCommand::dir(string command)
+{
+	char buf[BUFSIZ + 1];
+
+	int resCode;
+
+	int port = portCommand();
+
+	SOCKET ListenSocket = createListeningSocket(port);
+
+	if (command == "dir")
+		sprintf(buf, "LIST\r\n");
+	else if (command == "ls")
+		sprintf(buf, "NLST\r\n");
+
+	resCode = ClientSocket.Send(buf, strlen(buf), 0);
+
+	memset(buf, 0, sizeof buf);
+	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+	cout << buf;
+
+	SOCKET AcceptSocket;
+	AcceptSocket = accept(ListenSocket, NULL, NULL);
+
+	if (AcceptSocket == INVALID_SOCKET) {
+		wprintf(L"Accept failed with error: %ld\n", WSAGetLastError());
+	}
+	else
+	{
+		int iResult;
+		while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
+			cout << buf;
+			memset(buf, 0, iResult);
+		}
+	}
+
+	closesocket(ListenSocket);
+	closesocket(AcceptSocket);
+
+	//WSACleanup();
+
+	memset(buf, 0, sizeof buf);
+	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+	cout << buf;
 }
 
 void IHandleCommand::lcd(string command)
@@ -414,7 +521,7 @@ void IHandleCommand::serverSideCommands(string command, string noti, const int c
 	}
 
 	//reformat directory
-	int spaceCount = count(dir.begin(), dir.end(), ' ');
+	int spaceCount = ::count(dir.begin(), dir.end(), ' ');
 	if (spaceCount >= 1)
 	{
 		int pos = dir.find_first_of(' ');

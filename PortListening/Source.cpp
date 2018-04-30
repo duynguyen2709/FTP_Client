@@ -24,25 +24,12 @@ int main(int argc, char **argv)
 
 	//createSocket(argv[1]);
 	char *ip1 = "0.0.0.0";
+
 	std::thread t1(createSocket, ip1);
 	if (t1.joinable())
 	{
 		t1.join();
 	}
-	/*char *ip2 = "127.0.0.1";
-	char *ip3 = "192.168.1.48";
-
-	std::thread t2(createSocket, ip2);
-	std::thread t3(createSocket, ip3);
-
-	if (t2.joinable())
-	{
-		t2.join();
-	}
-	if (t3.joinable())
-	{
-		t3.join();
-	}*/
 
 	return 0;
 }
@@ -64,12 +51,6 @@ int createSocket(char *ip) {
 	// IP address, and port for the socket that is being bound.
 	sockaddr_in service;
 	service.sin_family = AF_INET;
-
-	//service.sin_addr.s_addr = inet_addr("127.0.0.1");
-
-	//service.sin_addr.s_addr = inet_addr("0.0.0.0");
-
-	//service.sin_addr.s_addr = inet_addr(ip);
 
 	service.sin_addr.s_addr = INADDR_ANY;
 
@@ -109,7 +90,14 @@ int createSocket(char *ip) {
 		return 1;
 	}
 	else
-		printf("Client connected on %s.\n", ip);
+	{
+		int iResult;
+		char buf[512];
+		while ((iResult = recv(AcceptSocket, buf, 512, 0)) > 0) {
+			printf("%s", buf);
+			memset(buf, 0, iResult);
+		}
+	}
 
 	system("pause");
 
