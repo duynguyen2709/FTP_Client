@@ -117,6 +117,7 @@ private:
 	int errorCode;
 };
 
+//INTERFACE FOR HANDLING COMMANDS
 class IHandleCommand : public FTP_Client {
 private:
 	ResponseErrorException ex;
@@ -129,6 +130,5 @@ public:
 
 	void lcd(string command);
 	void pwd();
-
-	void directoryCommands(string command, const int commandLength, const char * format);
+	void serverSideCommands(string command, string noti, const int commandLength, const char * format);
 };

@@ -124,7 +124,7 @@ bool FTP_Client::Login(string command)
 			return false;
 
 		char buf[BUFSIZ + 1];
-		int tmpres, size, status;
+		int tmpres, size;
 		/*
 		Connection Establishment
 		120
@@ -146,9 +146,9 @@ bool FTP_Client::Login(string command)
 		*/
 		char * str;
 		int codeftp;
-		cout << "Connection established, waiting for welcome message...\n";
 
-		//How to know the end of welcome message: http://stackoverflow.com/questions/13082538/how-to-know-the-end-of-ftp-welcome-message
+		//cout << "Connection established, waiting for welcome message...\n";
+
 		memset(buf, 0, sizeof buf);
 		while ((tmpres = ClientSocket.Receive(buf, BUFSIZ, 0)) > 0) {
 			sscanf(buf, "%d", &codeftp);
@@ -233,15 +233,24 @@ bool FTP_Client::Login(string command)
 
 void FTP_Client::InitCommandList()
 {
-	ifstream cin("CommandList.txt");
-	string cmd;
-
-	while (!cin.eof())
-	{
-		cin >> cmd;
-		CommandList.push_back(cmd);
-	}
-	cin.clear();
+	CommandList.push_back("ftp");
+	CommandList.push_back("open");
+	CommandList.push_back("ls");
+	CommandList.push_back("dir");
+	CommandList.push_back("put");
+	CommandList.push_back("get");
+	CommandList.push_back("mput");
+	CommandList.push_back("mget");
+	CommandList.push_back("cd");
+	CommandList.push_back("lcd");
+	CommandList.push_back("delete");
+	CommandList.push_back("mdelete");
+	CommandList.push_back("mkdir");
+	CommandList.push_back("rmdir");
+	CommandList.push_back("pwd");
+	CommandList.push_back("passive");
+	CommandList.push_back("quit");
+	CommandList.push_back("exit");
 }
 
 bool FTP_Client::checkCommand(string command)
@@ -256,25 +265,6 @@ bool FTP_Client::checkCommand(string command)
 
 void FTP_Client::ExecuteCommand(string command)
 {
-	/*char buf[BUFSIZ + 1];
-	int tmpres;
-
-	My_IP_Address ipAddress;
-
-	sprintf(buf, "PORT %d,%d,%d,%d,205,220\r\n", ipAddress.x1, ipAddress.x2, ipAddress.x3, ipAddress.x4);
-	tmpres = ClientSocket.Send(buf, strlen(buf), 0);
-
-	memset(buf, 0, sizeof buf);
-	tmpres = ClientSocket.Receive(buf, BUFSIZ, 0);
-	cout << buf << endl;
-
-	strcpy(buf, "LIST\r\n");
-	tmpres = ClientSocket.Send(buf, strlen(buf), 0);
-
-	memset(buf, 0, sizeof buf);
-	tmpres = ClientSocket.Receive(buf, BUFSIZ, 0);
-	cout << buf << endl;*/
-
 	Command cmd = commandValue(command);
 
 	IHandleCommand *commandHandler = static_cast<IHandleCommand *>(&(*this));
@@ -294,22 +284,21 @@ void FTP_Client::ExecuteCommand(string command)
 	case MGET:
 		break;
 	case CD:
-
-		//commandHandler->cd(command);
-		commandHandler->directoryCommands(command, 2, "CWD %s\r\n");
+		commandHandler->serverSideCommands(command, "Remote directory:", 2, "CWD %s\r\n");
 		break;
 	case LCD:
 		commandHandler->lcd(command);
 		break;
 	case _DELETE:
+		commandHandler->serverSideCommands(command, "Remote file: ", 4, "DELE %s\r\n");
 		break;
 	case MDELETE:
 		break;
 	case MKDIR:
-		commandHandler->directoryCommands(command, 5, "XMKD %s\r\n");
+		commandHandler->serverSideCommands(command, "Directory name: ", 5, "XMKD %s\r\n");
 		break;
 	case RMDIR:
-		commandHandler->directoryCommands(command, 5, "XRMD %s\r\n");
+		commandHandler->serverSideCommands(command, "Directory name: ", 5, "XRMD %s\r\n");
 		break;
 	case PWD:
 		commandHandler->pwd();
@@ -325,18 +314,17 @@ void FTP_Client::ExecuteCommand(string command)
 
 void ResponseErrorException::InitErrorCodeList()
 {
-	ifstream cin("ErrorCodeList.txt");
-	int code;
-	string err;
-
-	while (!cin.eof())
-	{
-		cin >> code;
-		getline(cin, err);
-		ErrorCodeList.push_back(make_pair(code, err));
-	}
-
-	cin.clear();
+	ErrorCodeList.push_back(make_pair(0, "Not connected"));
+	ErrorCodeList.push_back(make_pair(1, "Invalid command"));
+	ErrorCodeList.push_back(make_pair(200, "Command okay"));
+	ErrorCodeList.push_back(make_pair(202, "Command not implemented, superfluous at this site."));
+	ErrorCodeList.push_back(make_pair(421, "Service not available, closing control connection."));
+	ErrorCodeList.push_back(make_pair(500, "Syntax error, command unrecognized.This may include errors such as command line too long."));
+	ErrorCodeList.push_back(make_pair(501, "Syntax error in parameters or arguments."));
+	ErrorCodeList.push_back(make_pair(502, "Command not implemented."));
+	ErrorCodeList.push_back(make_pair(503, "Bad sequence of commands."));
+	ErrorCodeList.push_back(make_pair(530, "Not logged in."));
+	ErrorCodeList.push_back(make_pair(550, "Requested action not taken."));
 }
 
 void IHandleCommand::lcd(string command)
@@ -346,7 +334,7 @@ void IHandleCommand::lcd(string command)
 	//If there's no argument,
 	//Then set local directory to user default home directory
 	if (command.find_first_of(' ') == string::npos) {
-		chdir(getenv("USERPROFILE"));
+		_chdir(getenv("USERPROFILE"));
 		cout << "Local directory now " << getcwd(buf, BUFSIZ) << endl;
 		return;
 	}
@@ -406,7 +394,7 @@ void IHandleCommand::pwd()
 	cout << buf;
 }
 
-void IHandleCommand::directoryCommands(string command, const int commandLength, const char * format)
+void IHandleCommand::serverSideCommands(string command, string noti, const int commandLength, const char * format)
 {
 	char buf[BUFSIZ + 1];
 
@@ -415,13 +403,17 @@ void IHandleCommand::directoryCommands(string command, const int commandLength, 
 	int resCode = 0;
 
 	int space = command.find_first_of(' ');
+
+	//if no argument then ask for directory name
 	if (space == string::npos) {
-		cout << "Directory name :";
+		cout << noti;
 		getline(cin, dir);
 	}
 	else {
 		dir = command.substr(commandLength + 1);
 	}
+
+	//reformat directory
 	int spaceCount = count(dir.begin(), dir.end(), ' ');
 	if (spaceCount >= 1)
 	{
@@ -429,6 +421,7 @@ void IHandleCommand::directoryCommands(string command, const int commandLength, 
 		dir = dir.substr(0, pos);
 	}
 
+	//send command & receive response
 	sprintf(buf, format, dir.c_str());
 	resCode = ClientSocket.Send(buf, strlen(buf), 0);
 

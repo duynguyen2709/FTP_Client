@@ -1,1 +1,0 @@
-ftp open ls dir put get mput mget cd lcd delete mdelete mkdir rmdir pwd passive quit exit
