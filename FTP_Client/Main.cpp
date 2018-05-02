@@ -68,7 +68,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 			//START OF MAIN CODE
 			//
 			ResponseErrorException::InitErrorCodeList();
-			FTP_Client::InitCommandList();
+			FTP_Client::initCommandList();
 
 			FTP_Client client;
 			ResponseErrorException ex;
@@ -95,7 +95,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 					{
 						if (command.find("open") != string::npos || command.find("ftp") != string::npos)
 						{
-							bool status = client.Login(command);
+							bool status = client.login(command);
 							if (!status)
 							{
 								ex.setErrorCode(530);
@@ -120,7 +120,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 						}
 					}
 					else {
-						client.ExecuteCommand(command);
+						client.executeCommand(command);
 					}
 				}
 				catch (ResponseErrorException &e) {

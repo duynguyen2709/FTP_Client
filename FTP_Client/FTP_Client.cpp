@@ -8,7 +8,7 @@ vector<string> FTP_Client::CommandList = {};
 vector<int> IHandleCommand::PortUsed = {};
 vector<pair<int, string>> ResponseErrorException::ErrorCodeList = {};
 
-bool FTP_Client::isLegitIPAddress(string command)
+bool FTP_Client::checkLegitIPAddress(string command)
 {
 	string IP_Server;
 
@@ -25,13 +25,46 @@ bool FTP_Client::isLegitIPAddress(string command)
 
 	regex ipAddressFormat("(^([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])$)");
 
-	if (!regex_match(IP_Server, ipAddressFormat))
-		return false;
+	if (regex_match(IP_Server, ipAddressFormat))
+		return true;
 
-	return true;
+	string ipFromHostName = resolveDomainToIP(IP_Server);
+
+	if (ipFromHostName != "")
+	{
+		if (regex_match(ipFromHostName, ipAddressFormat))
+			return true;
+	}
+	else cout << "Invalid IP/Host Address" << endl;
+
+	return false;
 }
 
-Command FTP_Client::commandValue(string command)
+string FTP_Client::resolveDomainToIP(string host)
+{
+	DWORD dwError;
+
+	struct hostent *remoteHost;
+	struct in_addr addr;
+
+	remoteHost = gethostbyname(host.c_str());
+
+	if (remoteHost == NULL)
+	{
+		dwError = WSAGetLastError();
+		if (dwError != 0) {
+			return "";
+		}
+	}
+	else
+	{
+		addr.s_addr = *(u_long *)remoteHost->h_addr_list[0];
+		return (string(inet_ntoa(addr)));
+	}
+	return "";
+}
+
+Command FTP_Client::getCommandValue(string command)
 {
 	Command cmd;
 
@@ -100,6 +133,12 @@ FTP_Client::FTP_Client()
 {
 	ConnectionStatus = false;
 	CommandHandler = static_cast<IHandleCommand *>(&(*this));
+
+	WSADATA wsaData;
+	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (iResult != NO_ERROR) {
+		wprintf(L"WSAStartup failed with error: %ld\n", iResult);
+	}
 }
 
 FTP_Client::~FTP_Client()
@@ -107,13 +146,10 @@ FTP_Client::~FTP_Client()
 	ClientSocket.Close();
 }
 
-bool FTP_Client::Login(string command)
+bool FTP_Client::login(string command)
 {
-	if (!isLegitIPAddress(command))
-	{
-		cout << "Invalid IP Address." << endl;
+	if (!checkLegitIPAddress(command))
 		return false;
-	}
 
 	ResponseErrorException ex;
 	try
@@ -127,29 +163,9 @@ bool FTP_Client::Login(string command)
 
 		char buf[BUFSIZ + 1];
 		int tmpres, size;
-		/*
-		Connection Establishment
-		120
-		220
-		220
-		421
-		Login
-		USER
-		230
-		530
-		500, 501, 421
-		331, 332
-		PASS
-		230
-		202
-		530
-		500, 501, 503, 421
-		332
-		*/
+
 		char * str;
 		int codeftp;
-
-		//cout << "Connection established, waiting for welcome message...\n";
 
 		memset(buf, 0, sizeof buf);
 		while ((tmpres = ClientSocket.Receive(buf, BUFSIZ, 0)) > 0) {
@@ -233,7 +249,7 @@ bool FTP_Client::Login(string command)
 	return false;
 }
 
-void FTP_Client::InitCommandList()
+void FTP_Client::initCommandList()
 {
 	CommandList.push_back("ftp");
 	CommandList.push_back("open");
@@ -265,9 +281,9 @@ bool FTP_Client::checkCommand(string command)
 	return false;
 }
 
-void FTP_Client::ExecuteCommand(string command)
+void FTP_Client::executeCommand(string command)
 {
-	Command cmd = commandValue(command);
+	Command cmd = getCommandValue(command);
 
 	switch (cmd)
 	{
@@ -276,8 +292,10 @@ void FTP_Client::ExecuteCommand(string command)
 		CommandHandler->dir(command);
 		break;
 	case PUT:
+		CommandHandler->put(command);
 		break;
 	case GET:
+		CommandHandler->get(command);
 		break;
 	case MPUT:
 		break;
@@ -329,13 +347,7 @@ void ResponseErrorException::InitErrorCodeList()
 
 SOCKET IHandleCommand::createListeningSocket(int port)
 {
-	WSADATA wsaData;
-	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-	if (iResult != NO_ERROR) {
-		wprintf(L"WSAStartup failed with error: %ld\n", iResult);
-		return NULL;
-	}
-
+	int iResult;
 	SOCKET ListenSocket;
 	ListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (ListenSocket == INVALID_SOCKET) {
@@ -374,7 +386,7 @@ int IHandleCommand::portCommand()
 
 	int resCode;
 
-	int port = randomPort();
+	int port = randomizePort();
 	int temp = port / 256;
 
 	sprintf(buf, "PORT %d,%d,%d,%d,%d,%d\r\n", ipAddress.x1, ipAddress.x2, ipAddress.x3, ipAddress.x4, temp, port - temp * 256);
@@ -427,7 +439,91 @@ void IHandleCommand::dir(string command)
 	closesocket(ListenSocket);
 	closesocket(AcceptSocket);
 
-	//WSACleanup();
+	memset(buf, 0, sizeof buf);
+	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+	cout << buf;
+}
+
+void IHandleCommand::put(string command)
+{
+	char buf[BUFSIZ + 1];
+
+	int resCode;
+
+	int port = portCommand();
+
+	SOCKET ListenSocket = createListeningSocket(port);
+
+	int pos = command.find_first_of(' ') + 1;
+	string fileName = command.substr(pos);
+
+	sprintf(buf, "STOR %s\r\n", fileName.c_str());
+	resCode = ClientSocket.Send(buf, strlen(buf), 0);
+
+	memset(buf, 0, sizeof buf);
+	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+	cout << buf;
+
+	SOCKET AcceptSocket;
+	AcceptSocket = accept(ListenSocket, NULL, NULL);
+
+	if (AcceptSocket == INVALID_SOCKET) {
+		wprintf(L"Accept failed with error: %ld\n", WSAGetLastError());
+	}
+	else
+	{
+		int iResult;
+		while ((iResult = send(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
+			cout << buf;
+			memset(buf, 0, iResult);
+		}
+	}
+
+	closesocket(ListenSocket);
+	closesocket(AcceptSocket);
+
+	memset(buf, 0, sizeof buf);
+	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+	cout << buf;
+}
+
+void IHandleCommand::get(string command)
+{
+	char buf[BUFSIZ + 1];
+
+	int resCode;
+
+	int port = portCommand();
+
+	SOCKET ListenSocket = createListeningSocket(port);
+
+	int pos = command.find_first_of(' ') + 1;
+	string fileName = command.substr(pos);
+
+	sprintf(buf, "RETR %s\r\n", fileName.c_str());
+	resCode = ClientSocket.Send(buf, strlen(buf), 0);
+
+	memset(buf, 0, sizeof buf);
+	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+	cout << buf;
+
+	SOCKET AcceptSocket;
+	AcceptSocket = accept(ListenSocket, NULL, NULL);
+
+	if (AcceptSocket == INVALID_SOCKET) {
+		wprintf(L"Accept failed with error: %ld\n", WSAGetLastError());
+	}
+	else
+	{
+		int iResult;
+		while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
+			cout << buf;
+			memset(buf, 0, iResult);
+		}
+	}
+
+	closesocket(ListenSocket);
+	closesocket(AcceptSocket);
 
 	memset(buf, 0, sizeof buf);
 	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);

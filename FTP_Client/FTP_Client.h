@@ -18,11 +18,12 @@ struct My_IP_Address {
 
 	My_IP_Address() {
 		HINTERNET hInternet, hFile;
-		DWORD rSize;
+		DWORD rSize = 0;
 		char buffer[47];
 
 		hInternet = InternetOpen(NULL, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
-		hFile = InternetOpenUrlA(hInternet, "http://www.passwordrandom.com/query?command=ip", NULL, 0, INTERNET_FLAG_RELOAD, 0);
+		hFile = InternetOpenUrlA(hInternet, "https://myexternalip.com/raw", NULL, 0, INTERNET_FLAG_RELOAD, 0);
+
 		InternetReadFile(hFile, &buffer, sizeof(buffer), &rSize);
 		buffer[rSize] = '\0';
 
@@ -73,9 +74,11 @@ private:
 
 	bool ConnectionStatus;
 
-	bool isLegitIPAddress(string command);
+	bool checkLegitIPAddress(string command);
 
-	Command commandValue(string command);
+	string resolveDomainToIP(string host);
+
+	Command getCommandValue(string command);
 
 	IHandleCommand *CommandHandler;
 
@@ -87,15 +90,15 @@ public:
 
 	bool isConnected() { return ConnectionStatus; }
 
-	bool Login(string command);
+	bool login(string command);
 
 	static vector<string> CommandList;
 
-	static void InitCommandList();
+	static void initCommandList();
 
 	static bool checkCommand(string command);
 
-	void ExecuteCommand(string command);
+	void executeCommand(string command);
 };
 
 class ResponseErrorException : public exception
@@ -135,7 +138,7 @@ private:
 
 	static vector<int> PortUsed;
 
-	int randomPort() {
+	int randomizePort() {
 		int port;
 	randomPort: port = 52700 + rand() % 2000;
 
@@ -153,11 +156,15 @@ private:
 
 public:
 
-	IHandleCommand() { };
+	IHandleCommand() {
+	};
 
 	~IHandleCommand() {	};
 
 	void dir(string command);
+	void put(string command);
+	void get(string command);
+
 	void lcd(string command);
 	void pwd();
 	void serverSideCommands(string command, string noti, const int commandLength, const char * format);
