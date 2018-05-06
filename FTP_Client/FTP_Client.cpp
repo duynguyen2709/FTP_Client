@@ -475,11 +475,25 @@ void IHandleCommand::put(string command)
 	}
 	else
 	{
-		int iResult;
-		while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
-			cout << buf;
-			memset(buf, 0, iResult);
+		ifstream inputFile;
+		inputFile.open(fileName.c_str(), ios::binary | ios::in);
+
+		//get file's size
+		inputFile.seekg(0, ios_base::end);
+		int length = inputFile.tellg();
+		inputFile.seekg(0, ios_base::beg);
+
+		while (length > BUFSIZ)
+		{
+			inputFile.read(buf, BUFSIZ);
+			send(AcceptSocket, buf, BUFSIZ, 0);
+			length -= BUFSIZ;
 		}
+
+		inputFile.read(buf, length);
+		send(AcceptSocket, buf, length, 0);
+
+		inputFile.close();
 	}
 
 	closesocket(ListenSocket);
