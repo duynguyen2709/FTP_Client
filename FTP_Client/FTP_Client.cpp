@@ -174,7 +174,7 @@ bool FTP_Client::login(string command)
 		while ((tmpres = ClientSocket.Receive(buf, BUFSIZ, 0)) > 0) {
 			sscanf(buf, "%d", &codeftp);
 			cout << buf;
-			if (codeftp != 220) //120, 240, 421: something wrong
+			if (codeftp != 220)
 			{
 				ex.setErrorCode(codeftp);
 				throw ex;
@@ -244,8 +244,11 @@ bool FTP_Client::login(string command)
 	}
 	catch (ResponseErrorException &e)
 	{
+		ClientSocket.Close();
 		ConnectionStatus = false;
-		cout << e.getErrorStringResponse() << endl;
+
+		cin.ignore();
+		cin.clear();
 		return false;
 	}
 
