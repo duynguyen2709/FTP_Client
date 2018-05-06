@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "FTP_Client.h"
+#include "ResponseErrorException.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -67,7 +68,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 			//
 			//START OF MAIN CODE
 			//
-			ResponseErrorException::InitErrorCodeList();
+			ResponseErrorException::initErrorCodeList();
 			FTP_Client::initCommandList();
 
 			FTP_Client client;

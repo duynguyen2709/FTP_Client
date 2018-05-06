@@ -5,7 +5,23 @@
 
 vector<string> FTP_Client::CommandList = {};
 vector<int> IHandleCommand::PortUsed = {};
-vector<pair<int, string>> ResponseErrorException::ErrorCodeList = {};
+
+FTP_Client::FTP_Client()
+{
+	ConnectionStatus = false;
+	CommandHandler = static_cast<IHandleCommand *>(&(*this));
+
+	WSADATA wsaData;
+	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (iResult != NO_ERROR) {
+		wprintf(L"WSAStartup failed with error: %ld\n", iResult);
+	}
+}
+
+FTP_Client::~FTP_Client()
+{
+	ClientSocket.Close();
+}
 
 bool FTP_Client::checkLegitIPAddress(string command)
 {
@@ -162,23 +178,6 @@ Command FTP_Client::getCommandValue(string command)
 	}
 
 	return cmd;
-}
-
-FTP_Client::FTP_Client()
-{
-	ConnectionStatus = false;
-	CommandHandler = static_cast<IHandleCommand *>(&(*this));
-
-	WSADATA wsaData;
-	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-	if (iResult != NO_ERROR) {
-		wprintf(L"WSAStartup failed with error: %ld\n", iResult);
-	}
-}
-
-FTP_Client::~FTP_Client()
-{
-	ClientSocket.Close();
 }
 
 bool FTP_Client::login(string command)
@@ -371,21 +370,6 @@ void FTP_Client::executeCommand(string command)
 		break;
 	}
 	return;
-}
-
-void ResponseErrorException::InitErrorCodeList()
-{
-	ErrorCodeList.push_back(make_pair(0, "Not connected"));
-	ErrorCodeList.push_back(make_pair(1, "Invalid command"));
-	ErrorCodeList.push_back(make_pair(200, "Command okay"));
-	ErrorCodeList.push_back(make_pair(202, "Command not implemented, superfluous at this site."));
-	ErrorCodeList.push_back(make_pair(421, "Service not available, closing control connection."));
-	ErrorCodeList.push_back(make_pair(500, "Syntax error, command unrecognized.This may include errors such as command line too long."));
-	ErrorCodeList.push_back(make_pair(501, "Syntax error in parameters or arguments."));
-	ErrorCodeList.push_back(make_pair(502, "Command not implemented."));
-	ErrorCodeList.push_back(make_pair(503, "Bad sequence of commands."));
-	ErrorCodeList.push_back(make_pair(530, "Not logged in."));
-	ErrorCodeList.push_back(make_pair(550, "Requested action not taken."));
 }
 
 SOCKET IHandleCommand::createListeningSocket(int port)

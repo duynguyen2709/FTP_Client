@@ -2,6 +2,7 @@
 
 #include "resource.h"
 #include "stdafx.h"
+#include "ResponseErrorException.h"
 #pragma comment(lib, "Ws2_32.lib")
 
 #define server "103.207.36.66"
@@ -78,7 +79,6 @@ private:
 	Command getCommandValue(string command);
 
 	IHandleCommand *CommandHandler;
-
 public:
 
 	FTP_Client();
@@ -96,34 +96,6 @@ public:
 	static bool checkCommand(string command);
 
 	void executeCommand(string command);
-};
-
-class ResponseErrorException : public exception
-{
-public:
-	static void InitErrorCodeList();
-
-	ResponseErrorException() :errorCode(0) {};
-
-	~ResponseErrorException() {};
-
-	void setErrorCode(int code) {
-		errorCode = code;
-	}
-
-	const string getErrorStringResponse() const throw() {
-		for (auto err : ErrorCodeList)
-		{
-			if (err.first == errorCode)
-				return err.second;
-		}
-		return "";
-	}
-
-private:
-	static vector<pair<int, string>> ErrorCodeList;
-
-	int errorCode;
 };
 
 //INTERFACE FOR HANDLING COMMANDS

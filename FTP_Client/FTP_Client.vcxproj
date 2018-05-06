@@ -147,12 +147,14 @@
   <ItemGroup>
     <ClInclude Include="FTP_Client.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="ResponseErrorException.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FTP_Client.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="ResponseErrorException.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

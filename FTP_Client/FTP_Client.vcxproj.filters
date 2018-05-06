@@ -30,6 +30,9 @@
     <ClInclude Include="FTP_Client.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ResponseErrorException.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -39,6 +42,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ResponseErrorException.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
