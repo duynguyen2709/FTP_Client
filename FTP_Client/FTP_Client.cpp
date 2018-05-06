@@ -65,68 +65,100 @@ string FTP_Client::resolveDomainToIP(string host)
 
 Command FTP_Client::getCommandValue(string command)
 {
-	Command cmd;
+	Command cmd = _NULL;
+	ResponseErrorException ex;
 
-	if (command.find("ls") != string::npos)
-	{
-		cmd = LS;
+	if (std::count(command.begin(), command.end(), ' ') > 2) {
+		ex.setErrorCode(501);
+		throw ex;
 	}
-	else if (command.find("open") != string::npos)
-	{
-		cmd = OPEN;
+
+	int pos = command.find_first_of(' ');
+	if (pos != string::npos) {
+		command = command.substr(0, pos);
 	}
-	else if (command.find("mkdir") != string::npos)
+
+	if (command == "ls")
+	{
+		if (pos == string::npos)
+			cmd = LS;
+		else {
+			ex.setErrorCode(501);
+			throw ex;
+		}
+	}
+	else if (command == "mkdir")
 	{
 		cmd = MKDIR;
 	}
-	else if (command.find("rmdir") != string::npos)
+	else if (command == "rmdir")
 	{
 		cmd = RMDIR;
 	}
-	else if (command.find("dir") != string::npos)
+	else if (command == "dir")
 	{
-		cmd = DIR;
+		if (pos == string::npos)
+			cmd = DIR;
+		else {
+			ex.setErrorCode(501);
+			throw ex;
+		}
 	}
-	else if (command.find("mput") != string::npos)
+	else if (command == "mput")
 	{
 		cmd = MPUT;
 	}
-	else if (command.find("put") != string::npos)
+	else if (command == "put")
 	{
 		cmd = PUT;
 	}
-	else if (command.find("mget") != string::npos)
+	else if (command == "mget")
 	{
 		cmd = MGET;
 	}
-	else if (command.find("get") != string::npos)
+	else if (command == "get")
 	{
 		cmd = GET;
 	}
-	else if (command.find("lcd") != string::npos)
+	else if (command == "lcd")
 	{
-		cmd = LCD;
+		if (pos == string::npos)
+			cmd = LCD;
+		else {
+			ex.setErrorCode(501);
+			throw ex;
+		}
 	}
-	else if (command.find("cd") != string::npos)
+	else if (command == "cd")
 	{
 		cmd = CD;
 	}
-	else if (command.find("mdelete") != string::npos)
+	else if (command == "mdelete")
 	{
 		cmd = MDELETE;
 	}
-	else if (command.find("delete") != string::npos)
+	else if (command == "delete")
 	{
 		cmd = _DELETE;
 	}
 
-	else if (command.find("pwd") != string::npos)
+	else if (command == "pwd")
 	{
-		cmd = PWD;
+		if (pos == string::npos)
+			cmd = PWD;
+		else {
+			ex.setErrorCode(501);
+			throw ex;
+		}
 	}
-	else if (command.find("passive") != string::npos)
+	else if (command == "passive")
 	{
-		cmd = PASSIVE;
+		if (pos == string::npos)
+			cmd = PASSIVE;
+		else {
+			ex.setErrorCode(501);
+			throw ex;
+		}
 	}
 
 	return cmd;
@@ -279,6 +311,11 @@ void FTP_Client::initCommandList()
 
 bool FTP_Client::checkCommand(string command)
 {
+	int pos = command.find_first_of(' ');
+	if (pos != string::npos) {
+		command = command.substr(0, pos);
+	}
+
 	for (auto cmd : CommandList)
 		if (command == cmd)
 		{

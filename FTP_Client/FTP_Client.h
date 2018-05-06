@@ -51,12 +51,12 @@ enum Command {
 	_DELETE,
 	MDELETE,
 	MKDIR,
-	OPEN,
 	RMDIR,
 	PWD,
 	PASSIVE,
 	QUIT,
-	EXIT
+	EXIT,
+	_NULL
 };
 
 class IHandleCommand;

@@ -120,6 +120,12 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 						}
 					}
 					else {
+						if (FTP_Client::checkCommand(command) == false)
+						{
+							ex.setErrorCode(1);
+							throw ex;
+						}
+
 						client.executeCommand(command);
 					}
 				}
