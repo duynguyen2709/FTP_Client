@@ -2,11 +2,7 @@
 
 #include "resource.h"
 #include "stdafx.h"
-#include <winsock2.h>
-#include <stdio.h>
-#include <windows.h>
 #pragma comment(lib, "Ws2_32.lib")
-#include <corecrt_io.h>
 
 #define server "103.207.36.66"
 
@@ -55,6 +51,7 @@ enum Command {
 	_DELETE,
 	MDELETE,
 	MKDIR,
+	OPEN,
 	RMDIR,
 	PWD,
 	PASSIVE,
@@ -156,8 +153,7 @@ private:
 
 public:
 
-	IHandleCommand() {
-	};
+	IHandleCommand() {};
 
 	~IHandleCommand() {	};
 

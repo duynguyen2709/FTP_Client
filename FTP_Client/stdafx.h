@@ -46,8 +46,8 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <stdlib.h>
-#include <thread>
 #include <time.h>
+#include <direct.h>
 
 using namespace std;
 

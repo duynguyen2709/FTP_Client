@@ -2,7 +2,6 @@
 //
 #include "stdafx.h"
 #include "FTP_Client.h"
-#include <direct.h>
 
 vector<string> FTP_Client::CommandList = {};
 vector<int> IHandleCommand::PortUsed = {};
@@ -71,6 +70,10 @@ Command FTP_Client::getCommandValue(string command)
 	if (command.find("ls") != string::npos)
 	{
 		cmd = LS;
+	}
+	else if (command.find("open") != string::npos)
+	{
+		cmd = OPEN;
 	}
 	else if (command.find("mkdir") != string::npos)
 	{
@@ -473,7 +476,7 @@ void IHandleCommand::put(string command)
 	else
 	{
 		int iResult;
-		while ((iResult = send(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
+		while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
 			cout << buf;
 			memset(buf, 0, iResult);
 		}
@@ -516,10 +519,16 @@ void IHandleCommand::get(string command)
 	else
 	{
 		int iResult;
+
+		ofstream outputFile;
+		outputFile.open(fileName.c_str(), ios::out | ios::binary | ios::trunc);
+
 		while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
-			cout << buf;
+			outputFile.write(buf, iResult);
 			memset(buf, 0, iResult);
 		}
+
+		outputFile.close();
 	}
 
 	closesocket(ListenSocket);
