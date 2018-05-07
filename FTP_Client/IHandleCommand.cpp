@@ -2,6 +2,7 @@
 #include "FTP_Client.h"
 
 vector<int> IHandleCommand::PortUsed = {};
+My_IP_Address *IHandleCommand::ipAddress = nullptr;
 
 SOCKET IHandleCommand::createListeningSocket(int port)
 {
@@ -39,7 +40,6 @@ SOCKET IHandleCommand::createListeningSocket(int port)
 
 int IHandleCommand::portCommand()
 {
-	My_IP_Address ipAddress;
 	char buf[BUFSIZ + 1];
 
 	int resCode;
@@ -47,13 +47,21 @@ int IHandleCommand::portCommand()
 	int port = getNextFreePort();
 	int temp = port / 256;
 
-	sprintf(buf, "PORT %d,%d,%d,%d,%d,%d\r\n", ipAddress.x1, ipAddress.x2, ipAddress.x3, ipAddress.x4, temp, port - temp * 256);
+	sprintf(buf, "PORT %d,%d,%d,%d,%d,%d\r\n", IHandleCommand::ipAddress->x1, IHandleCommand::ipAddress->x2, IHandleCommand::ipAddress->x3, IHandleCommand::ipAddress->x4, temp, port - temp * 256);
 
 	resCode = ClientSocket.Send(buf, strlen(buf), 0);
 
 	memset(buf, 0, sizeof buf);
 	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
 	cout << buf;
+
+	int codeftp;
+	sscanf(buf, "%d", &codeftp);
+	if (codeftp != 200)
+	{
+		ex.setErrorCode(codeftp);
+		throw ex;
+	}
 
 	return port;
 }
@@ -134,6 +142,74 @@ const char * IHandleCommand::formatBuffer(string command, string & srcFileName, 
 			return "";
 		}
 	}
+}
+
+void IHandleCommand::mdelete(const string command)
+{
+	int pos = command.find_first_of(' ');
+
+	string fileType;
+	if (pos == string::npos) {
+		cout << "Remote files";
+		getline(cin, fileType);
+	}
+	else {
+		fileType = command.substr(pos + 1);
+	}
+
+	char buf[BUFSIZ + 1];
+
+	int resCode;
+
+	vector<string> fileList;
+
+	int port = portCommand();
+
+	SOCKET ListenSocket = createListeningSocket(port);
+
+	sprintf(buf, "NLST %s\r\n", fileType.c_str());
+	resCode = ClientSocket.Send(buf, strlen(buf), 0);
+
+	memset(buf, 0, sizeof buf);
+	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+	cout << buf;
+	memset(buf, 0, sizeof buf);
+
+	SOCKET AcceptSocket;
+	AcceptSocket = accept(ListenSocket, NULL, NULL);
+
+	if (AcceptSocket == INVALID_SOCKET) {
+		wprintf(L"Accept failed with error: %ld\n", WSAGetLastError());
+	}
+	else
+	{
+		int iResult;
+
+		while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
+			getFileListFromBuffer(fileList, buf);
+
+			memset(buf, 0, iResult);
+		}
+	}
+	for (auto f : fileList) {
+		cout << "mdelete " << f << "?";
+		char c;
+		cin >> c;
+		if (tolower(c) == 'y') {
+			string str = "delete " + f;
+			oneArgCommands(str, "Remote file: ", 6, "DELE %s\r\n");
+		}
+	}
+
+	cin.ignore();
+	cin.clear();
+
+	closesocket(ListenSocket);
+	closesocket(AcceptSocket);
+
+	memset(buf, 0, sizeof buf);
+	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+	cout << buf;
 }
 
 void IHandleCommand::portRelatedCommands(string command)
@@ -301,7 +377,7 @@ void IHandleCommand::pwd()
 	cout << buf;
 }
 
-void IHandleCommand::directoryCommands(string command, string noti, const int commandLength, const char * format)
+void IHandleCommand::oneArgCommands(string command, string noti, const int commandLength, const char * format)
 {
 	char buf[BUFSIZ + 1];
 
@@ -336,4 +412,18 @@ void IHandleCommand::directoryCommands(string command, string noti, const int co
 	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
 
 	cout << buf;
+}
+
+void IHandleCommand::getFileListFromBuffer(vector<string> &fileList, const char * buf) {
+	string str(buf);
+
+	int firstPos = 0;
+	int secondPos = str.find("\r\n", 0);
+
+	while (secondPos < str.length() || secondPos != string::npos) {
+		fileList.push_back(str.substr(firstPos, secondPos - firstPos));
+
+		firstPos = secondPos + 2;
+		secondPos = str.find("\r\n", firstPos);
+	}
 }

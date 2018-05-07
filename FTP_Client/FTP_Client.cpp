@@ -20,7 +20,7 @@ FTP_Client::~FTP_Client()
 	ClientSocket.Close();
 }
 
-bool FTP_Client::checkLegitIPAddress(string command)
+bool FTP_Client::checkLegitIPAddress(const string command)
 {
 	string IP_Server;
 
@@ -52,7 +52,7 @@ bool FTP_Client::checkLegitIPAddress(string command)
 	return false;
 }
 
-string FTP_Client::resolveDomainToIP(string host)
+string FTP_Client::resolveDomainToIP(const string host)
 {
 	DWORD dwError;
 
@@ -177,7 +177,7 @@ Command FTP_Client::getCommandValue(string command)
 	return cmd;
 }
 
-bool FTP_Client::login(string command)
+bool FTP_Client::login(const string command)
 {
 	if (!checkLegitIPAddress(command))
 		return false;
@@ -320,7 +320,7 @@ bool FTP_Client::checkCommand(string command)
 	return false;
 }
 
-void FTP_Client::executeCommand(string command)
+void FTP_Client::executeCommand(const string command)
 {
 	Command cmd = getCommandValue(command);
 
@@ -338,21 +338,22 @@ void FTP_Client::executeCommand(string command)
 	case MGET:
 		break;
 	case CD:
-		CommandHandler->directoryCommands(command, "Remote directory:", 2, "CWD %s\r\n");
+		CommandHandler->oneArgCommands(command, "Remote directory:", 2, "CWD %s\r\n");
 		break;
 	case LCD:
 		CommandHandler->lcd(command);
 		break;
 	case _DELETE:
-		CommandHandler->directoryCommands(command, "Remote file: ", 4, "DELE %s\r\n");
+		CommandHandler->oneArgCommands(command, "Remote file: ", 6, "DELE %s\r\n");
 		break;
 	case MDELETE:
+		CommandHandler->mdelete(command);
 		break;
 	case MKDIR:
-		CommandHandler->directoryCommands(command, "Directory name: ", 5, "XMKD %s\r\n");
+		CommandHandler->oneArgCommands(command, "Directory name: ", 5, "XMKD %s\r\n");
 		break;
 	case RMDIR:
-		CommandHandler->directoryCommands(command, "Directory name: ", 5, "XRMD %s\r\n");
+		CommandHandler->oneArgCommands(command, "Directory name: ", 5, "XRMD %s\r\n");
 		break;
 	case PWD:
 		CommandHandler->pwd();

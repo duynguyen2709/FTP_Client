@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "FTP_Client.h"
 #include "ResponseErrorException.h"
+#include <thread>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -39,6 +40,10 @@ inline string FormatCommand(string command)
 	return command;
 }
 
+void initIP() {
+	IHandleCommand::ipAddress = new My_IP_Address();
+}
+
 int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 {
 	int nRetCode = 0;
@@ -68,6 +73,10 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 			//
 			//START OF MAIN CODE
 			//
+			cout << "Initializing...Please wait..." << endl;
+
+			IHandleCommand::ipAddress = new My_IP_Address();
+
 			ResponseErrorException::initErrorCodeList();
 			FTP_Client::initCommandList();
 

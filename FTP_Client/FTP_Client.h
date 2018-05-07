@@ -76,7 +76,7 @@ private:
 
 	string resolveDomainToIP(const string host);
 
-	Command getCommandValue(const string command);
+	Command getCommandValue(string command);
 
 	IHandleCommand *CommandHandler;
 public:
@@ -93,7 +93,7 @@ public:
 
 	static void initCommandList();
 
-	static bool checkCommand(const string command);
+	static bool checkCommand(string command);
 
 	void executeCommand(const string command);
 };
@@ -126,13 +126,17 @@ private:
 	void get(SOCKET AcceptSocket, const string dstFileName);
 	void put(SOCKET AcceptSocket, const string srcFileName);
 
+	void getFileListFromBuffer(vector<string> &fileList, const char * buf);
 public:
 
 	IHandleCommand() {};
-	~IHandleCommand() {	};
+	~IHandleCommand() {};
 
+	static My_IP_Address *ipAddress;
+
+	void mdelete(const string command);
 	void portRelatedCommands(const string command);
 	void lcd(const string command);
 	void pwd();
-	void directoryCommands(const string command, const string noti, const int commandLength, const char * format);
+	void oneArgCommands(const string command, const string noti, const int commandLength, const char * format);
 };
