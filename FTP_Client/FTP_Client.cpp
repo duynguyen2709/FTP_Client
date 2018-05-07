@@ -1,10 +1,7 @@
-// ftp_clnt_csocket.cpp : Defines the entry point for the console application.
-//
 #include "stdafx.h"
 #include "FTP_Client.h"
 
 vector<string> FTP_Client::CommandList = {};
-vector<int> IHandleCommand::PortUsed = {};
 
 FTP_Client::FTP_Client()
 {
@@ -331,34 +328,31 @@ void FTP_Client::executeCommand(string command)
 	{
 	case LS:
 	case DIR:
-		CommandHandler->dir(command);
-		break;
 	case PUT:
-		CommandHandler->put(command);
-		break;
 	case GET:
-		CommandHandler->get(command);
+		CommandHandler->portRelatedCommands(command);
 		break;
+
 	case MPUT:
 		break;
 	case MGET:
 		break;
 	case CD:
-		CommandHandler->serverSideCommands(command, "Remote directory:", 2, "CWD %s\r\n");
+		CommandHandler->directoryCommands(command, "Remote directory:", 2, "CWD %s\r\n");
 		break;
 	case LCD:
 		CommandHandler->lcd(command);
 		break;
 	case _DELETE:
-		CommandHandler->serverSideCommands(command, "Remote file: ", 4, "DELE %s\r\n");
+		CommandHandler->directoryCommands(command, "Remote file: ", 4, "DELE %s\r\n");
 		break;
 	case MDELETE:
 		break;
 	case MKDIR:
-		CommandHandler->serverSideCommands(command, "Directory name: ", 5, "XMKD %s\r\n");
+		CommandHandler->directoryCommands(command, "Directory name: ", 5, "XMKD %s\r\n");
 		break;
 	case RMDIR:
-		CommandHandler->serverSideCommands(command, "Directory name: ", 5, "XRMD %s\r\n");
+		CommandHandler->directoryCommands(command, "Directory name: ", 5, "XRMD %s\r\n");
 		break;
 	case PWD:
 		CommandHandler->pwd();
@@ -370,313 +364,4 @@ void FTP_Client::executeCommand(string command)
 		break;
 	}
 	return;
-}
-
-SOCKET IHandleCommand::createListeningSocket(int port)
-{
-	int iResult;
-	SOCKET ListenSocket;
-	ListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (ListenSocket == INVALID_SOCKET) {
-		wprintf(L"Created Listening Socket failed with error: %ld\n", WSAGetLastError());
-		WSACleanup();
-		return NULL;
-	}
-
-	sockaddr_in service;
-	service.sin_family = AF_INET;
-	service.sin_addr.s_addr = INADDR_ANY;
-	service.sin_port = htons((u_short)port);
-
-	if (::bind(ListenSocket,
-		(SOCKADDR *)& service, sizeof(service)) == SOCKET_ERROR) {
-		wprintf(L"Bind failed with error: %ld\n", WSAGetLastError());
-		closesocket(ListenSocket);
-		WSACleanup();
-		return NULL;
-	}
-
-	if (listen(ListenSocket, 1) == SOCKET_ERROR) {
-		wprintf(L"Listen failed with error: %ld\n", WSAGetLastError());
-		closesocket(ListenSocket);
-		WSACleanup();
-		return NULL;
-	}
-
-	return ListenSocket;
-}
-
-int IHandleCommand::portCommand()
-{
-	My_IP_Address ipAddress;
-	char buf[BUFSIZ + 1];
-
-	int resCode;
-
-	int port = randomizePort();
-	int temp = port / 256;
-
-	sprintf(buf, "PORT %d,%d,%d,%d,%d,%d\r\n", ipAddress.x1, ipAddress.x2, ipAddress.x3, ipAddress.x4, temp, port - temp * 256);
-
-	resCode = ClientSocket.Send(buf, strlen(buf), 0);
-
-	memset(buf, 0, sizeof buf);
-	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
-	cout << buf;
-
-	return port;
-}
-
-void IHandleCommand::dir(string command)
-{
-	char buf[BUFSIZ + 1];
-
-	int resCode;
-
-	int port = portCommand();
-
-	SOCKET ListenSocket = createListeningSocket(port);
-
-	if (command == "dir")
-		sprintf(buf, "LIST\r\n");
-	else if (command == "ls")
-		sprintf(buf, "NLST\r\n");
-
-	resCode = ClientSocket.Send(buf, strlen(buf), 0);
-
-	memset(buf, 0, sizeof buf);
-	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
-	cout << buf;
-
-	SOCKET AcceptSocket;
-	AcceptSocket = accept(ListenSocket, NULL, NULL);
-
-	if (AcceptSocket == INVALID_SOCKET) {
-		wprintf(L"Accept failed with error: %ld\n", WSAGetLastError());
-	}
-	else
-	{
-		int iResult;
-		while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
-			cout << buf;
-			memset(buf, 0, iResult);
-		}
-	}
-
-	closesocket(ListenSocket);
-	closesocket(AcceptSocket);
-
-	memset(buf, 0, sizeof buf);
-	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
-	cout << buf;
-}
-
-void IHandleCommand::put(string command)
-{
-	char buf[BUFSIZ + 1];
-
-	int resCode;
-
-	int port = portCommand();
-
-	SOCKET ListenSocket = createListeningSocket(port);
-
-	int pos = command.find_first_of(' ') + 1;
-	string fileName = command.substr(pos);
-
-	sprintf(buf, "STOR %s\r\n", fileName.c_str());
-	resCode = ClientSocket.Send(buf, strlen(buf), 0);
-
-	memset(buf, 0, sizeof buf);
-	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
-	cout << buf;
-
-	SOCKET AcceptSocket;
-	AcceptSocket = accept(ListenSocket, NULL, NULL);
-
-	if (AcceptSocket == INVALID_SOCKET) {
-		wprintf(L"Accept failed with error: %ld\n", WSAGetLastError());
-	}
-	else
-	{
-		ifstream inputFile;
-		inputFile.open(fileName.c_str(), ios::binary | ios::in);
-
-		//get file's size
-		inputFile.seekg(0, ios_base::end);
-		int length = inputFile.tellg();
-		inputFile.seekg(0, ios_base::beg);
-
-		while (length > BUFSIZ)
-		{
-			inputFile.read(buf, BUFSIZ);
-			send(AcceptSocket, buf, BUFSIZ, 0);
-			length -= BUFSIZ;
-		}
-
-		inputFile.read(buf, length);
-		send(AcceptSocket, buf, length, 0);
-
-		inputFile.close();
-	}
-
-	closesocket(ListenSocket);
-	closesocket(AcceptSocket);
-
-	memset(buf, 0, sizeof buf);
-	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
-	cout << buf;
-}
-
-void IHandleCommand::get(string command)
-{
-	char buf[BUFSIZ + 1];
-
-	int resCode;
-
-	int port = portCommand();
-
-	SOCKET ListenSocket = createListeningSocket(port);
-
-	int pos = command.find_first_of(' ') + 1;
-	string fileName = command.substr(pos);
-
-	sprintf(buf, "RETR %s\r\n", fileName.c_str());
-	resCode = ClientSocket.Send(buf, strlen(buf), 0);
-
-	memset(buf, 0, sizeof buf);
-	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
-	cout << buf;
-
-	SOCKET AcceptSocket;
-	AcceptSocket = accept(ListenSocket, NULL, NULL);
-
-	if (AcceptSocket == INVALID_SOCKET) {
-		wprintf(L"Accept failed with error: %ld\n", WSAGetLastError());
-	}
-	else
-	{
-		int iResult;
-
-		ofstream outputFile;
-		outputFile.open(fileName.c_str(), ios::out | ios::binary | ios::trunc);
-
-		while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
-			outputFile.write(buf, iResult);
-			memset(buf, 0, iResult);
-		}
-
-		outputFile.close();
-	}
-
-	closesocket(ListenSocket);
-	closesocket(AcceptSocket);
-
-	memset(buf, 0, sizeof buf);
-	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
-	cout << buf;
-}
-
-void IHandleCommand::lcd(string command)
-{
-	char buf[BUFSIZ];
-
-	//If there's no argument,
-	//Then set local directory to user default home directory
-	if (command.find_first_of(' ') == string::npos) {
-		_chdir(getenv("USERPROFILE"));
-		cout << "Local directory now " << getcwd(buf, BUFSIZ) << endl;
-		return;
-	}
-
-	//
-	//else
-	//check if directory exists
-	//then change to new directory
-	//else print not found directory
-	//
-	string newDir = command.substr(4);
-
-	wstring stemp = wstring(newDir.begin(), newDir.end());
-	LPCWSTR dir = stemp.c_str();
-
-	DWORD dwAttrib = GetFileAttributes(dir);
-
-	if (!(dwAttrib != INVALID_FILE_ATTRIBUTES &&
-		(dwAttrib & FILE_ATTRIBUTE_DIRECTORY))) {
-		cout << newDir << ": File not found" << endl;
-		return;
-	}
-
-	if (_chdir(newDir.c_str())) {
-
-		//handling error
-		switch (errno)
-		{
-		case ENOENT:
-			cout << "Unable to locate the directory: " << newDir << endl;
-			break;
-		case EINVAL:
-			cout << "Invalid buffer." << endl;
-			break;
-		default:
-			cout << "Unknown error." << endl;
-		}
-		return;
-	}
-
-	cout << "Local directory now " << getcwd(buf, BUFSIZ) << endl;
-}
-
-void IHandleCommand::pwd()
-{
-	char buf[255];
-
-	int resCode;
-
-	sprintf(buf, "XPWD\r\n");
-
-	resCode = ClientSocket.Send(buf, strlen(buf), 0);
-
-	memset(buf, 0, sizeof buf);
-	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
-
-	cout << buf;
-}
-
-void IHandleCommand::serverSideCommands(string command, string noti, const int commandLength, const char * format)
-{
-	char buf[BUFSIZ + 1];
-
-	string dir;
-
-	int resCode = 0;
-
-	int space = command.find_first_of(' ');
-
-	//if no argument then ask for directory name
-	if (space == string::npos) {
-		cout << noti;
-		getline(cin, dir);
-	}
-	else {
-		dir = command.substr(commandLength + 1);
-	}
-
-	//reformat directory
-	int spaceCount = ::count(dir.begin(), dir.end(), ' ');
-	if (spaceCount >= 1)
-	{
-		int pos = dir.find_first_of(' ');
-		dir = dir.substr(0, pos);
-	}
-
-	//send command & receive response
-	sprintf(buf, format, dir.c_str());
-	resCode = ClientSocket.Send(buf, strlen(buf), 0);
-
-	memset(buf, 0, sizeof buf);
-	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
-
-	cout << buf;
 }

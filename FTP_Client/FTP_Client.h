@@ -72,11 +72,11 @@ private:
 
 	bool ConnectionStatus;
 
-	bool checkLegitIPAddress(string command);
+	bool checkLegitIPAddress(const string command);
 
-	string resolveDomainToIP(string host);
+	string resolveDomainToIP(const string host);
 
-	Command getCommandValue(string command);
+	Command getCommandValue(const string command);
 
 	IHandleCommand *CommandHandler;
 public:
@@ -87,15 +87,15 @@ public:
 
 	bool isConnected() { return ConnectionStatus; }
 
-	bool login(string command);
+	bool login(const string command);
 
 	static vector<string> CommandList;
 
 	static void initCommandList();
 
-	static bool checkCommand(string command);
+	static bool checkCommand(const string command);
 
-	void executeCommand(string command);
+	void executeCommand(const string command);
 };
 
 //INTERFACE FOR HANDLING COMMANDS
@@ -103,37 +103,36 @@ class IHandleCommand : public FTP_Client {
 private:
 	ResponseErrorException ex;
 
-	SOCKET createListeningSocket(int port);
+	SOCKET createListeningSocket(const int port);
 
 	static vector<int> PortUsed;
 
-	int randomizePort() {
+	int getNextFreePort() {
 		int port;
-	randomPort: port = 52700 + rand() % 2000;
 
-		for (int i = 0; i < PortUsed.size(); i++)
-		{
-			if (PortUsed[i] == port)
-				goto randomPort;
-		}
+		if (PortUsed.empty())
+			port = 52700 + rand() % 2000;
+		else
+			port = PortUsed.back() + 1;
 
 		PortUsed.push_back(port);
 		return port;
 	}
 
+	const char* formatBuffer(const string command, string &srcFileName, string &dstFileName);
+
 	int portCommand();
+
+	void get(SOCKET AcceptSocket, const string dstFileName);
+	void put(SOCKET AcceptSocket, const string srcFileName);
 
 public:
 
 	IHandleCommand() {};
-
 	~IHandleCommand() {	};
 
-	void dir(string command);
-	void put(string command);
-	void get(string command);
-
-	void lcd(string command);
+	void portRelatedCommands(const string command);
+	void lcd(const string command);
 	void pwd();
-	void serverSideCommands(string command, string noti, const int commandLength, const char * format);
+	void directoryCommands(const string command, const string noti, const int commandLength, const char * format);
 };

@@ -47,6 +47,9 @@
     <ClCompile Include="ResponseErrorException.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="IHandleCommand.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="FTP_Client.rc">
