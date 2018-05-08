@@ -12,6 +12,15 @@ CWinApp theApp;
 
 #define ftp_str "ftp>"
 
+//************************************
+// Method:    FormatCommand
+// FullName:  FormatCommand
+// Access:    public
+// Returns:   std::string
+// Qualifier: delete space at start & end of command
+//			  ,change command to lowercase to compare with list
+// Parameter: string command
+//************************************
 inline string FormatCommand(string command)
 {
 	//DELETE SPACES AT END
@@ -31,17 +40,13 @@ inline string FormatCommand(string command)
 	//FORMAT COMMAND TO LOWERCASE
 	int spacePos = command.find_first_of(' ');
 
-	if (spacePos != string::npos) {
+	if (spacePos != NOT_FOUND) {
 		for (int i = 0; i < spacePos; i++)
 			command[i] = tolower(command[i]);
 	}
 	else transform(command.begin(), command.end(), command.begin(), ::tolower);
 
 	return command;
-}
-
-void initIP() {
-	IHandleCommand::ipAddress = new My_IP_Address();
 }
 
 int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
@@ -75,7 +80,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 			//
 			cout << "Initializing...Please wait..." << endl;
 
-			IHandleCommand::ipAddress = new My_IP_Address();
+			FTP_Client::ipAddress = new My_IP_Address();
 
 			ResponseErrorException::initErrorCodeList();
 			FTP_Client::initCommandList();
@@ -103,7 +108,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 					//otherwise every other command can not be executed.
 					else if (client.isConnected() == false)
 					{
-						if (command.find("open") != string::npos || command.find("ftp") != string::npos)
+						if (command.find("open") != NOT_FOUND || command.find("ftp") != NOT_FOUND)
 						{
 							bool status = client.login(command);
 							if (!status)

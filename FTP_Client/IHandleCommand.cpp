@@ -2,7 +2,6 @@
 #include "FTP_Client.h"
 
 vector<int> IHandleCommand::PortUsed = {};
-My_IP_Address *IHandleCommand::ipAddress = nullptr;
 
 SOCKET IHandleCommand::createListeningSocket(int port)
 {
@@ -38,6 +37,18 @@ SOCKET IHandleCommand::createListeningSocket(int port)
 	return ListenSocket;
 }
 
+int IHandleCommand::getNextFreePort() {
+	int port;
+
+	if (PortUsed.empty())
+		port = 52700 + rand() % 2000;
+	else
+		port = PortUsed.back() + 1;
+
+	PortUsed.push_back(port);
+	return port;
+}
+
 int IHandleCommand::portCommand()
 {
 	char buf[BUFSIZ + 1];
@@ -66,6 +77,57 @@ int IHandleCommand::portCommand()
 	return port;
 }
 
+void IHandleCommand::checkSpaceInParameter(string param, string &srcFileName, string &dstFileName, int secondSpace)
+{
+	//one parameter contains spaces
+	regex oneParam("^\".+\"$");
+
+	//2 parameters & contain spaces
+	regex twoParams_2Spaces("^\".+\" \".+\"$");
+
+	//2 parameters & only 1 contains spaces
+	regex twoParams_1Spaces_atSource("^\".+\" .+$");
+	regex twoParams_1Spaces_atDest("^.+ \".+\"$");
+
+	int pos, pos2;
+
+	if (regex_match(param, twoParams_2Spaces))
+	{
+		pos = param.find('"', 1);
+		pos2 = param.find('"', pos + 1);
+		srcFileName = param.substr(1, pos - 1);
+		dstFileName = param.substr(pos2 + 1, param.length() - pos2 - 2);
+	}
+	else if (regex_match(param, twoParams_1Spaces_atSource))
+	{
+		pos = param.find('"', 1);
+		srcFileName = param.substr(1, pos - 1);
+		dstFileName = param.substr(pos + 2);
+	}
+	else if (regex_match(param, twoParams_1Spaces_atDest))
+	{
+		pos = param.find_first_of(' ');
+		srcFileName = param.substr(0, pos);
+		dstFileName = param.substr(pos + 2, param.length() - pos - 3);
+	}
+	else if (regex_match(param, oneParam)) {
+		srcFileName = dstFileName = param.substr(1, param.length() - 2);
+	}
+	else {
+		if (secondSpace == NOT_FOUND)
+			srcFileName = dstFileName = param;
+		else {
+			pos = param.find_first_of(' ');
+			pos2 = param.find(' ', pos + 1);
+			srcFileName = param.substr(0, pos);
+			if (pos2 == NOT_FOUND)
+				dstFileName = param.substr(pos + 1, param.length() - pos - 1);
+			else
+				dstFileName = param.substr(pos + 1, pos2 - pos - 1);
+		}
+	}
+}
+
 const char * IHandleCommand::formatBuffer(string command, string & srcFileName, string & dstFileName)
 {
 	if (command == "dir")
@@ -78,10 +140,11 @@ const char * IHandleCommand::formatBuffer(string command, string & srcFileName, 
 	int pos = command.find_first_of(' ');
 	int pos2 = command.find(' ', pos + 1);
 
-	if (command.find("get") != string::npos) {
+	//GET Command
+	if (command.find("get") != NOT_FOUND) {
 
 		//no parameter
-		if (pos == string::npos) {
+		if (pos == NOT_FOUND) {
 			cout << "Remote file ";
 			getline(cin, srcFileName);
 
@@ -89,17 +152,8 @@ const char * IHandleCommand::formatBuffer(string command, string & srcFileName, 
 			getline(cin, dstFileName);
 		}
 		else {
-
-			//1 parameter
-			if (pos2 == string::npos) {
-				srcFileName = dstFileName = command.substr(pos + 1);
-			}
-
-			//2 parameter
-			else {
-				srcFileName = command.substr(pos + 1, pos2 - pos - 1);
-				dstFileName = command.substr(pos2 + 1);
-			}
+			string param = command.substr(pos + 1);
+			checkSpaceInParameter(param, srcFileName, dstFileName, pos2);
 		}
 
 		char temp[BUFSIZ];
@@ -107,28 +161,20 @@ const char * IHandleCommand::formatBuffer(string command, string & srcFileName, 
 		return temp;
 	}
 
-	if (command.find("put") != string::npos) {
+	//PUT Command
+	if (command.find("put") != NOT_FOUND) {
 
 		//no parameter
-		if (pos == string::npos) {
+		if (pos == NOT_FOUND) {
 			cout << "Local file ";
 			getline(cin, srcFileName);
 
 			cout << "Remote file ";
 			getline(cin, dstFileName);
 		}
-		else
-		{
-			//1 parameter
-			if (pos2 == string::npos) {
-				srcFileName = dstFileName = command.substr(pos + 1);
-			}
-
-			//2 parameter
-			else {
-				srcFileName = command.substr(pos + 1, pos2 - pos - 1);
-				dstFileName = command.substr(pos2 + 1);
-			}
+		else {
+			string param = command.substr(pos + 1);
+			checkSpaceInParameter(param, srcFileName, dstFileName, pos2);
 		}
 
 		if (ifstream(srcFileName).good())
@@ -149,7 +195,7 @@ void IHandleCommand::mdelete(const string command)
 	int pos = command.find_first_of(' ');
 
 	string fileType;
-	if (pos == string::npos) {
+	if (pos == NOT_FOUND) {
 		cout << "Remote files";
 		getline(cin, fileType);
 	}
@@ -253,11 +299,11 @@ void IHandleCommand::portRelatedCommands(string command)
 		}
 
 		//GET Command
-		else if (command.find("get") != string::npos)
+		else if (command.find("get") != NOT_FOUND)
 			get(AcceptSocket, dstFileName);
 
 		//PUT Command
-		else if (command.find("put") != string::npos)
+		else if (command.find("put") != NOT_FOUND)
 			put(AcceptSocket, srcFileName);
 	}
 
@@ -316,7 +362,7 @@ void IHandleCommand::lcd(string command)
 
 	//If there's no argument,
 	//Then set local directory to user default home directory
-	if (command.find_first_of(' ') == string::npos) {
+	if (command.find_first_of(' ') == NOT_FOUND) {
 		_chdir(getenv("USERPROFILE"));
 		cout << "Local directory now " << getcwd(buf, BUFSIZ) << endl;
 		return;
@@ -388,7 +434,7 @@ void IHandleCommand::oneArgCommands(string command, string noti, const int comma
 	int space = command.find_first_of(' ');
 
 	//if no argument then ask for directory name
-	if (space == string::npos) {
+	if (space == NOT_FOUND) {
 		cout << noti;
 		getline(cin, dir);
 	}
@@ -396,12 +442,16 @@ void IHandleCommand::oneArgCommands(string command, string noti, const int comma
 		dir = command.substr(commandLength + 1);
 	}
 
-	//reformat directory
-	int spaceCount = ::count(dir.begin(), dir.end(), ' ');
-	if (spaceCount >= 1)
-	{
-		int pos = dir.find_first_of(' ');
-		dir = dir.substr(0, pos);
+	//check if directory's name included space
+	regex spaceIncluded("^\".+\"$");
+	if (regex_match(dir, spaceIncluded)) {
+		dir = dir.substr(1, dir.length() - 2);
+	}
+	else {
+		space = dir.find_first_of(' ');
+		if (space != NOT_FOUND) {
+			dir = dir.substr(0, space);
+		}
 	}
 
 	//send command & receive response
@@ -420,7 +470,7 @@ void IHandleCommand::getFileListFromBuffer(vector<string> &fileList, const char 
 	int firstPos = 0;
 	int secondPos = str.find("\r\n", 0);
 
-	while (secondPos < str.length() || secondPos != string::npos) {
+	while (secondPos < str.length() || secondPos != NOT_FOUND) {
 		fileList.push_back(str.substr(firstPos, secondPos - firstPos));
 
 		firstPos = secondPos + 2;

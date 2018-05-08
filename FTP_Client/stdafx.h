@@ -54,4 +54,6 @@ using namespace std;
 #pragma comment(lib, "wininet")
 #pragma comment(lib, "Ws2_32.lib")
 
+#define NOT_FOUND string::npos
+
 // TODO: reference additional headers your program requires here

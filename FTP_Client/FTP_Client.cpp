@@ -2,6 +2,7 @@
 #include "FTP_Client.h"
 
 vector<string> FTP_Client::CommandList = {};
+My_IP_Address *FTP_Client::ipAddress = nullptr;
 
 FTP_Client::FTP_Client()
 {
@@ -81,24 +82,15 @@ Command FTP_Client::getCommandValue(string command)
 	Command cmd = _NULL;
 	ResponseErrorException ex;
 
-	if (std::count(command.begin(), command.end(), ' ') > 2) {
-		ex.setErrorCode(501);
-		throw ex;
-	}
-
+	//substring to get only the command
 	int pos = command.find_first_of(' ');
-	if (pos != string::npos) {
+	if (pos != NOT_FOUND) {
 		command = command.substr(0, pos);
 	}
 
 	if (command == "ls")
 	{
-		if (pos == string::npos)
-			cmd = LS;
-		else {
-			ex.setErrorCode(501);
-			throw ex;
-		}
+		cmd = LS;
 	}
 	else if (command == "mkdir")
 	{
@@ -110,12 +102,7 @@ Command FTP_Client::getCommandValue(string command)
 	}
 	else if (command == "dir")
 	{
-		if (pos == string::npos)
-			cmd = DIR;
-		else {
-			ex.setErrorCode(501);
-			throw ex;
-		}
+		cmd = DIR;
 	}
 	else if (command == "mput")
 	{
@@ -135,7 +122,7 @@ Command FTP_Client::getCommandValue(string command)
 	}
 	else if (command == "lcd")
 	{
-		if (pos == string::npos)
+		if (pos == NOT_FOUND)
 			cmd = LCD;
 		else {
 			ex.setErrorCode(501);
@@ -157,7 +144,7 @@ Command FTP_Client::getCommandValue(string command)
 
 	else if (command == "pwd")
 	{
-		if (pos == string::npos)
+		if (pos == NOT_FOUND)
 			cmd = PWD;
 		else {
 			ex.setErrorCode(501);
@@ -166,7 +153,7 @@ Command FTP_Client::getCommandValue(string command)
 	}
 	else if (command == "passive")
 	{
-		if (pos == string::npos)
+		if (pos == NOT_FOUND)
 			cmd = PASSIVE;
 		else {
 			ex.setErrorCode(501);
@@ -308,7 +295,7 @@ void FTP_Client::initCommandList()
 bool FTP_Client::checkCommand(string command)
 {
 	int pos = command.find_first_of(' ');
-	if (pos != string::npos) {
+	if (pos != NOT_FOUND) {
 		command = command.substr(0, pos);
 	}
 
