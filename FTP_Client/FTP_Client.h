@@ -348,7 +348,7 @@ public:
 	//************************************
 	~IHandleCommand() {};
 
-	void mdelete(const string command);
+	void multipleFilesCommands(const string command);
 
 	//************************************
 	// Method:    portRelatedCommands

@@ -190,25 +190,27 @@ const char * IHandleCommand::formatBuffer(string command, string & srcFileName, 
 	}
 }
 
-void IHandleCommand::mdelete(const string command)
+void IHandleCommand::multipleFilesCommands(const string command)
 {
 	int pos = command.find_first_of(' ');
 
 	vector<string> fileType;
 	vector<string> fileList;
-	string param;
+	string param, cmd;
+	char buf[BUFSIZ + 1];
+	memset(buf, 0, sizeof buf);
+	int resCode;
+
 	if (pos == NOT_FOUND) {
+		cmd = command;
 		cout << "Remote files";
 		getline(cin, param);
 	}
 	else {
 		param = command.substr(pos + 1);
+		cmd = command.substr(0, pos);
 	}
 	getFileTypesFromParam(fileType, param);
-
-	char buf[BUFSIZ + 1];
-	memset(buf, 0, sizeof buf);
-	int resCode;
 
 	for (auto fType : fileType) {
 		int port = portCommand();
@@ -251,7 +253,7 @@ void IHandleCommand::mdelete(const string command)
 
 	for (auto f : fileList) {
 		memset(buf, 0, sizeof buf);
-		cout << "mdelete " << f << "?";
+		cout << cmd << " " << f << "?";
 
 		if (f.find(' ', 0) != NOT_FOUND) {
 			f = "\"" + f + "\"";
@@ -260,11 +262,18 @@ void IHandleCommand::mdelete(const string command)
 		char c;
 		cin >> c;
 		if (tolower(c) == 'y') {
-			string str = "delete " + f;
-			oneArgCommands(str, "Remote file: ", 6, "DELE %s\r\n");
+			if (cmd == "mdelete")
+			{
+				string str = "delete " + f;
+				oneArgCommands(str, "Remote file: ", 6, "DELE %s\r\n");
+			}
+			else if (cmd == "mget")
+			{
+				string str = "get " + f;
+				portRelatedCommands(str);
+			}
 		}
 	}
-
 	cin.ignore();
 	cin.clear();
 }

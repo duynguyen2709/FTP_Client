@@ -321,10 +321,7 @@ void FTP_Client::executeCommand(const string command)
 	case GET:
 		CommandHandler->portRelatedCommands(command);
 		break;
-
 	case MPUT:
-		break;
-	case MGET:
 		break;
 	case CD:
 		CommandHandler->oneArgCommands(command, "Remote directory:", 2, "CWD %s\r\n");
@@ -335,8 +332,9 @@ void FTP_Client::executeCommand(const string command)
 	case _DELETE:
 		CommandHandler->oneArgCommands(command, "Remote file: ", 6, "DELE %s\r\n");
 		break;
+	case MGET:
 	case MDELETE:
-		CommandHandler->mdelete(command);
+		CommandHandler->multipleFilesCommands(command);
 		break;
 	case MKDIR:
 		CommandHandler->oneArgCommands(command, "Directory name: ", 5, "XMKD %s\r\n");
