@@ -219,10 +219,13 @@ void IHandleCommand::mdelete(const string command)
 	memset(buf, 0, sizeof buf);
 	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
 	cout << buf;
-	memset(buf, 0, sizeof buf);
 
 	SOCKET AcceptSocket;
 	AcceptSocket = accept(ListenSocket, NULL, NULL);
+
+	memset(buf, 0, sizeof buf);
+	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+	cout << buf;
 
 	if (AcceptSocket == INVALID_SOCKET) {
 		wprintf(L"Accept failed with error: %ld\n", WSAGetLastError());
@@ -237,14 +240,21 @@ void IHandleCommand::mdelete(const string command)
 			memset(buf, 0, iResult);
 		}
 	}
+
 	for (auto f : fileList) {
 		cout << "mdelete " << f << "?";
+
+		if (f.find(' ', 0) != NOT_FOUND) {
+			f = "\"" + f + "\"";
+		}
+
 		char c;
 		cin >> c;
 		if (tolower(c) == 'y') {
 			string str = "delete " + f;
 			oneArgCommands(str, "Remote file: ", 6, "DELE %s\r\n");
 		}
+		else memset(buf, 0, sizeof buf);
 	}
 
 	cin.ignore();
@@ -252,10 +262,6 @@ void IHandleCommand::mdelete(const string command)
 
 	closesocket(ListenSocket);
 	closesocket(AcceptSocket);
-
-	memset(buf, 0, sizeof buf);
-	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
-	cout << buf;
 }
 
 void IHandleCommand::portRelatedCommands(string command)

@@ -45,6 +45,13 @@ struct My_IP_Address {
 		x3 = stoi(str.substr(pos2 + 1, pos3 - pos2 - 1));
 		x4 = stoi(str.substr(pos3 + 1));
 	}
+
+	My_IP_Address(int h1, int h2, int h3, int h4) {
+		x1 = h1;
+		x2 = h2;
+		x3 = h3;
+		x4 = h4;
+	}
 };
 
 //************************************
