@@ -49,6 +49,20 @@ inline string FormatCommand(string command)
 	return command;
 }
 
+inline void init() {
+	cout << "Initializing...Please wait..." << endl;
+
+	LPDWORD flag = nullptr;
+	if (InternetGetConnectedState(flag, 0) == TRUE)
+		FTP_Client::ipAddress = new My_IP_Address();
+	else
+		FTP_Client::ipAddress = new My_IP_Address(127, 0, 0, 1);
+
+	ResponseErrorException::initErrorCodeList();
+	FTP_Client::initCommandList();
+
+	cout << "Enter FTP command. \"?\" or \"help\" for command help" << endl;
+}
 int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 {
 	int nRetCode = 0;
@@ -78,18 +92,13 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 			//
 			//START OF MAIN CODE
 			//
-			cout << "Initializing...Please wait..." << endl;
 
-			FTP_Client::ipAddress = new My_IP_Address();
-
-			ResponseErrorException::initErrorCodeList();
-			FTP_Client::initCommandList();
-
+			init();
 			FTP_Client client;
 			ResponseErrorException ex;
 			string command;
 
-			cout << "Enter FTP command. \"?\" or \"help\" for command help" << endl;
+			//main loop
 			while (1)
 			{
 			enter: cout << ftp_str;

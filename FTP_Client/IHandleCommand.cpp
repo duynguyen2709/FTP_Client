@@ -194,54 +194,63 @@ void IHandleCommand::mdelete(const string command)
 {
 	int pos = command.find_first_of(' ');
 
-	string fileType;
+	vector<string> fileType;
+	vector<string> fileList;
+	string param;
 	if (pos == NOT_FOUND) {
 		cout << "Remote files";
-		getline(cin, fileType);
+		getline(cin, param);
 	}
 	else {
-		fileType = command.substr(pos + 1);
+		param = command.substr(pos + 1);
 	}
+	getFileTypesFromParam(fileType, param);
 
 	char buf[BUFSIZ + 1];
-
+	memset(buf, 0, sizeof buf);
 	int resCode;
 
-	vector<string> fileList;
+	for (auto fType : fileType) {
+		int port = portCommand();
 
-	int port = portCommand();
+		SOCKET ListenSocket = createListeningSocket(port);
 
-	SOCKET ListenSocket = createListeningSocket(port);
+		memset(buf, 0, sizeof buf);
+		sprintf(buf, "NLST %s\r\n", fType.c_str());
+		resCode = ClientSocket.Send(buf, strlen(buf), 0);
 
-	sprintf(buf, "NLST %s\r\n", fileType.c_str());
-	resCode = ClientSocket.Send(buf, strlen(buf), 0);
+		memset(buf, 0, sizeof buf);
+		resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+		cout << buf;
 
-	memset(buf, 0, sizeof buf);
-	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
-	cout << buf;
+		SOCKET AcceptSocket;
+		AcceptSocket = accept(ListenSocket, NULL, NULL);
 
-	SOCKET AcceptSocket;
-	AcceptSocket = accept(ListenSocket, NULL, NULL);
+		memset(buf, 0, sizeof buf);
+		resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+		cout << buf;
+		memset(buf, 0, sizeof buf);
 
-	memset(buf, 0, sizeof buf);
-	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
-	cout << buf;
-
-	if (AcceptSocket == INVALID_SOCKET) {
-		wprintf(L"Accept failed with error: %ld\n", WSAGetLastError());
-	}
-	else
-	{
-		int iResult;
-
-		while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
-			getFileListFromBuffer(fileList, buf);
-
-			memset(buf, 0, iResult);
+		if (AcceptSocket == INVALID_SOCKET) {
+			wprintf(L"Accept failed with error: %ld\n", WSAGetLastError());
 		}
+		else
+		{
+			int iResult;
+
+			while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
+				getFileListFromBuffer(fileList, buf);
+				memset(buf, 0, iResult);
+			}
+		}
+
+		closesocket(ListenSocket);
+		closesocket(AcceptSocket);
+		memset(buf, 0, sizeof buf);
 	}
 
 	for (auto f : fileList) {
+		memset(buf, 0, sizeof buf);
 		cout << "mdelete " << f << "?";
 
 		if (f.find(' ', 0) != NOT_FOUND) {
@@ -254,14 +263,10 @@ void IHandleCommand::mdelete(const string command)
 			string str = "delete " + f;
 			oneArgCommands(str, "Remote file: ", 6, "DELE %s\r\n");
 		}
-		else memset(buf, 0, sizeof buf);
 	}
 
 	cin.ignore();
 	cin.clear();
-
-	closesocket(ListenSocket);
-	closesocket(AcceptSocket);
 }
 
 void IHandleCommand::portRelatedCommands(string command)
@@ -492,5 +497,31 @@ void IHandleCommand::getFileListFromBuffer(vector<string> &fileList, const char 
 
 		firstPos = secondPos + 2;
 		secondPos = str.find("\r\n", firstPos);
+	}
+}
+
+void IHandleCommand::getFileTypesFromParam(vector<string>& fileTypes, string param)
+{
+	if (std::count(param.begin(), param.end(), '"') % 2 == 1) {
+		ex.setErrorCode(501);
+		throw ex;
+	}
+
+	int pos = 0;
+	string temp;
+	while (param.length() > 0) {
+		if (param[0] == '"') {
+			pos = param.find('"', 1);
+			temp = param.substr(1, pos - 1);
+			pos++;
+		}
+		else {
+			pos = param.find(' ', 1);
+			if (pos == NOT_FOUND)
+				pos = param.length();
+			temp = param.substr(0, pos);
+		}
+		fileTypes.push_back(temp);
+		param.erase(0, pos + 1);
 	}
 }

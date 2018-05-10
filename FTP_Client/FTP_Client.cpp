@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "FTP_Client.h"
 
+//static fields re-declaration
 vector<string> FTP_Client::CommandList = {};
 My_IP_Address *FTP_Client::ipAddress = nullptr;
 
@@ -18,6 +19,7 @@ FTP_Client::FTP_Client()
 
 FTP_Client::~FTP_Client()
 {
+	ConnectionStatus = false;
 	ClientSocket.Close();
 }
 
@@ -44,13 +46,13 @@ bool FTP_Client::checkLegitIPAddress(const string command)
 		return true;
 	}
 
-	string ipFromHostName = resolveDomainToIP(IP_Server);
+	string IPFromHostName = resolveDomainToIP(IP_Server);
 
-	if (ipFromHostName != "")
+	if (IPFromHostName != "")
 	{
-		if (regex_match(ipFromHostName, ipAddressFormat))
+		if (regex_match(IPFromHostName, ipAddressFormat))
 		{
-			server = ipFromHostName;
+			server = IPFromHostName;
 			return true;
 		}
 	}
@@ -128,12 +130,7 @@ Command FTP_Client::getCommandValue(string command)
 	}
 	else if (command == "lcd")
 	{
-		if (pos == NOT_FOUND)
-			cmd = LCD;
-		else {
-			ex.setErrorCode(501);
-			throw ex;
-		}
+		cmd = LCD;
 	}
 	else if (command == "cd")
 	{
@@ -181,7 +178,10 @@ bool FTP_Client::login(const string command)
 		ClientSocket.Create();
 
 		if (ClientSocket.Connect(LPCTSTR(CA2T(server.c_str())), 21) == 0)
+		{
+			ClientSocket.Close();
 			return false;
+		}
 
 		char buf[BUFSIZ + 1];
 		int tmpres, size;
@@ -193,11 +193,6 @@ bool FTP_Client::login(const string command)
 		while ((tmpres = ClientSocket.Receive(buf, BUFSIZ, 0)) > 0) {
 			sscanf(buf, "%d", &codeftp);
 			cout << buf;
-			if (codeftp != 220)
-			{
-				ex.setErrorCode(codeftp);
-				throw ex;
-			}
 
 			str = strstr(buf, "220");
 			if (str != NULL) {
@@ -259,6 +254,9 @@ bool FTP_Client::login(const string command)
 		cin.ignore();
 		cin.clear();
 
+		if (server == "127.0.0.1") {
+			ipAddress = new My_IP_Address(127, 0, 0, 1);
+		}
 		return true;
 	}
 	catch (ResponseErrorException &e)

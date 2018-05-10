@@ -326,6 +326,8 @@ private:
 	void put(SOCKET AcceptSocket, const string srcFileName);
 
 	void getFileListFromBuffer(vector<string> &fileList, const char * buf);
+
+	void getFileTypesFromParam(vector<string> &fileTypes, string param);
 public:
 
 	//************************************
