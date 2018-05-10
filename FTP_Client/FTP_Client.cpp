@@ -39,14 +39,20 @@ bool FTP_Client::checkLegitIPAddress(const string command)
 	regex ipAddressFormat("(^([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])$)");
 
 	if (regex_match(IP_Server, ipAddressFormat))
+	{
+		server = IP_Server;
 		return true;
+	}
 
 	string ipFromHostName = resolveDomainToIP(IP_Server);
 
 	if (ipFromHostName != "")
 	{
 		if (regex_match(ipFromHostName, ipAddressFormat))
+		{
+			server = ipFromHostName;
 			return true;
+		}
 	}
 	else cout << "Invalid IP/Host Address" << endl;
 
@@ -172,11 +178,9 @@ bool FTP_Client::login(const string command)
 	ResponseErrorException ex;
 	try
 	{
-		// Tao socket dau tien
 		ClientSocket.Create();
 
-		// Ket noi den Server
-		if (ClientSocket.Connect(_T(server), 21) == 0)
+		if (ClientSocket.Connect(LPCTSTR(CA2T(server.c_str())), 21) == 0)
 			return false;
 
 		char buf[BUFSIZ + 1];

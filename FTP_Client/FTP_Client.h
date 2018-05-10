@@ -5,8 +5,6 @@
 #include "ResponseErrorException.h"
 #pragma comment(lib, "Ws2_32.lib")
 
-#define server "103.207.36.66"
-
 struct My_IP_Address {
 	unsigned int x1;
 	unsigned int x2;
@@ -98,6 +96,8 @@ protected:
 	CSocket ClientSocket;
 
 private:
+
+	string server = "127.0.0.1";
 
 	//************************************
 	// Field:			ConnectionStatus

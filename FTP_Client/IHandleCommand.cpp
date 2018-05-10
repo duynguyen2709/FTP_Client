@@ -286,6 +286,14 @@ void IHandleCommand::portRelatedCommands(string command)
 	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
 	cout << buf;
 
+	int codeftp;
+	sscanf(buf, "%d", &codeftp);
+	if (codeftp != 150)
+	{
+		ex.setErrorCode(codeftp);
+		throw ex;
+	}
+
 	SOCKET AcceptSocket;
 	AcceptSocket = accept(ListenSocket, NULL, NULL);
 
@@ -297,6 +305,8 @@ void IHandleCommand::portRelatedCommands(string command)
 		int iResult;
 
 		//DIR/LS Command
+		memset(buf, 0, sizeof buf);
+
 		if (command == "dir" || command == "ls") {
 			while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
 				cout << buf;
@@ -319,6 +329,7 @@ void IHandleCommand::portRelatedCommands(string command)
 	memset(buf, 0, sizeof buf);
 	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
 	cout << buf;
+	memset(buf, 0, sizeof buf);
 }
 
 void IHandleCommand::get(SOCKET AcceptSocket, string dstFileName)
