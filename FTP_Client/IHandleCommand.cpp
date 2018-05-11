@@ -49,7 +49,7 @@ int IHandleCommand::getNextFreePort() {
 	return port;
 }
 
-int IHandleCommand::portCommand()
+int IHandleCommand::sendPORTCommand()
 {
 	char buf[BUFSIZ + 1];
 
@@ -130,15 +130,39 @@ void IHandleCommand::checkSpaceInParameter(string param, string &srcFileName, st
 
 const char * IHandleCommand::formatBuffer(string command, string & srcFileName, string & dstFileName)
 {
-	if (command == "dir")
-		return "LIST\r\n";
-
-	if (command == "ls")
-		return "NLST\r\n";
-
 	//check if parameters' existence
 	int pos = command.find_first_of(' ');
 	int pos2 = command.find(' ', pos + 1);
+
+	if (command.find("dir") != NOT_FOUND || command.find("ls") != NOT_FOUND)
+	{
+		if (pos != NOT_FOUND) {
+			vector<string> fileType;
+			getFileTypesFromParam(fileType, command.substr(pos + 1));
+			if (fileType.size() > 1)
+			{
+				ex.setErrorCode(501);
+				throw ex;
+			}
+			string temp = fileType[0];
+			char buf[BUFSIZ];
+			if (command.find("dir") != NOT_FOUND) {
+				sprintf(buf, "LIST %s\r\n", temp.c_str());
+			}
+			else if (command.find("ls") != NOT_FOUND) {
+				sprintf(buf, "NLST %s\r\n", temp.c_str());
+			}
+			return buf;
+		}
+
+		else {
+			if (command.find("dir") != NOT_FOUND)
+				return "LIST\r\n";
+
+			else if (command.find("ls") != NOT_FOUND)
+				return "NLST\r\n";
+		}
+	}
 
 	//GET Command
 	if (command.find("get") != NOT_FOUND) {
@@ -194,8 +218,7 @@ void IHandleCommand::multipleFilesCommands(const string command)
 {
 	int pos = command.find_first_of(' ');
 
-	vector<string> fileType;
-	vector<string> fileList;
+	vector<string> fileType, fileList;
 	string param, cmd;
 	char buf[BUFSIZ + 1];
 	memset(buf, 0, sizeof buf);
@@ -203,7 +226,10 @@ void IHandleCommand::multipleFilesCommands(const string command)
 
 	if (pos == NOT_FOUND) {
 		cmd = command;
-		cout << "Remote files";
+		if (cmd == "mput")
+			cout << "Local files ";
+		else
+			cout << "Remote files ";
 		getline(cin, param);
 	}
 	else {
@@ -212,43 +238,54 @@ void IHandleCommand::multipleFilesCommands(const string command)
 	}
 	getFileTypesFromParam(fileType, param);
 
-	for (auto fType : fileType) {
-		int port = portCommand();
-
-		SOCKET ListenSocket = createListeningSocket(port);
-
-		memset(buf, 0, sizeof buf);
-		sprintf(buf, "NLST %s\r\n", fType.c_str());
-		resCode = ClientSocket.Send(buf, strlen(buf), 0);
-
-		memset(buf, 0, sizeof buf);
-		resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
-		cout << buf;
-
-		SOCKET AcceptSocket;
-		AcceptSocket = accept(ListenSocket, NULL, NULL);
-
-		memset(buf, 0, sizeof buf);
-		resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
-		cout << buf;
-		memset(buf, 0, sizeof buf);
-
-		if (AcceptSocket == INVALID_SOCKET) {
-			wprintf(L"Accept failed with error: %ld\n", WSAGetLastError());
-		}
-		else
+	if (cmd == "mput") {
+		for (auto f : fileType)
 		{
-			int iResult;
-
-			while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
-				getFileListFromBuffer(fileList, buf);
-				memset(buf, 0, iResult);
-			}
+			string dir(getcwd(buf, BUFSIZ));
+			dir += "\\" + f;
+			getFileListInCurrentDir(fileList, dir);
 		}
+	}
+	else
+	{
+		for (auto fType : fileType) {
+			int port = sendPORTCommand();
 
-		closesocket(ListenSocket);
-		closesocket(AcceptSocket);
-		memset(buf, 0, sizeof buf);
+			SOCKET ListenSocket = createListeningSocket(port);
+
+			memset(buf, 0, sizeof buf);
+			sprintf(buf, "NLST %s\r\n", fType.c_str());
+			resCode = ClientSocket.Send(buf, strlen(buf), 0);
+
+			memset(buf, 0, sizeof buf);
+			resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+			cout << buf;
+
+			SOCKET AcceptSocket;
+			AcceptSocket = accept(ListenSocket, NULL, NULL);
+
+			memset(buf, 0, sizeof buf);
+			resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+			cout << buf;
+			memset(buf, 0, sizeof buf);
+
+			if (AcceptSocket == INVALID_SOCKET) {
+				wprintf(L"Accept failed with error: %ld\n", WSAGetLastError());
+			}
+			else
+			{
+				int iResult;
+
+				while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
+					getFileListFromBuffer(fileList, buf);
+					memset(buf, 0, iResult);
+				}
+			}
+
+			closesocket(ListenSocket);
+			closesocket(AcceptSocket);
+			memset(buf, 0, sizeof buf);
+		}
 	}
 
 	for (auto f : fileList) {
@@ -265,11 +302,15 @@ void IHandleCommand::multipleFilesCommands(const string command)
 			if (cmd == "mdelete")
 			{
 				string str = "delete " + f;
-				oneArgCommands(str, "Remote file: ", 6, "DELE %s\r\n");
+				nonPortRelatedCommands(str, "Remote file: ", 6, "DELE %s\r\n");
 			}
 			else if (cmd == "mget")
 			{
 				string str = "get " + f;
+				portRelatedCommands(str);
+			}
+			else if (cmd == "mput") {
+				string str = "put " + f;
 				portRelatedCommands(str);
 			}
 		}
@@ -284,13 +325,13 @@ void IHandleCommand::portRelatedCommands(string command)
 
 	int resCode;
 
-	int port = portCommand();
+	int port = sendPORTCommand();
 
 	SOCKET ListenSocket = createListeningSocket(port);
 
 	string srcFileName, dstFileName;
 
-	strcpy_s(buf, formatBuffer(command, srcFileName, dstFileName));
+	strcpy(buf, formatBuffer(command, srcFileName, dstFileName));
 	if (strcmp(buf, "") == 0)
 		return;
 
@@ -321,7 +362,7 @@ void IHandleCommand::portRelatedCommands(string command)
 		//DIR/LS Command
 		memset(buf, 0, sizeof buf);
 
-		if (command == "dir" || command == "ls") {
+		if (command.find("dir") != NOT_FOUND || command.find("ls") != NOT_FOUND) {
 			while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
 				cout << buf;
 				memset(buf, 0, iResult);
@@ -454,7 +495,7 @@ void IHandleCommand::pwd()
 	cout << buf;
 }
 
-void IHandleCommand::oneArgCommands(string command, string noti, const int commandLength, const char * format)
+void IHandleCommand::nonPortRelatedCommands(string command, string noti, const int commandLength, const char * format)
 {
 	char buf[BUFSIZ + 1];
 
@@ -533,4 +574,25 @@ void IHandleCommand::getFileTypesFromParam(vector<string>& fileTypes, string par
 		fileTypes.push_back(temp);
 		param.erase(0, pos + 1);
 	}
+}
+
+void IHandleCommand::getFileListInCurrentDir(vector<string> &fileList, const string dir) {
+	WIN32_FIND_DATA ffd;
+	TCHAR szDir[MAX_PATH];
+	HANDLE hFind = INVALID_HANDLE_VALUE;
+
+	szDir[dir.size()] = 0;
+	std::copy(dir.begin(), dir.end(), szDir);
+
+	hFind = FindFirstFile(szDir, &ffd);
+
+	do
+	{
+		char ch[260];
+		WideCharToMultiByte(CP_UTF8, 0, ffd.cFileName, -1, ch, 260, NULL, NULL);
+		string ss(ch);
+		fileList.push_back(ss);
+	} while (FindNextFile(hFind, &ffd) != 0);
+
+	FindClose(hFind);
 }

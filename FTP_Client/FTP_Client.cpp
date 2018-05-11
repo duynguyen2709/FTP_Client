@@ -321,26 +321,26 @@ void FTP_Client::executeCommand(const string command)
 	case GET:
 		CommandHandler->portRelatedCommands(command);
 		break;
-	case MPUT:
-		break;
+
 	case CD:
-		CommandHandler->oneArgCommands(command, "Remote directory:", 2, "CWD %s\r\n");
+		CommandHandler->nonPortRelatedCommands(command, "Remote directory:", 2, "CWD %s\r\n");
 		break;
 	case LCD:
 		CommandHandler->lcd(command);
 		break;
 	case _DELETE:
-		CommandHandler->oneArgCommands(command, "Remote file: ", 6, "DELE %s\r\n");
+		CommandHandler->nonPortRelatedCommands(command, "Remote file: ", 6, "DELE %s\r\n");
 		break;
+	case MPUT:
 	case MGET:
 	case MDELETE:
 		CommandHandler->multipleFilesCommands(command);
 		break;
 	case MKDIR:
-		CommandHandler->oneArgCommands(command, "Directory name: ", 5, "XMKD %s\r\n");
+		CommandHandler->nonPortRelatedCommands(command, "Directory name: ", 5, "XMKD %s\r\n");
 		break;
 	case RMDIR:
-		CommandHandler->oneArgCommands(command, "Directory name: ", 5, "XRMD %s\r\n");
+		CommandHandler->nonPortRelatedCommands(command, "Directory name: ", 5, "XRMD %s\r\n");
 		break;
 	case PWD:
 		CommandHandler->pwd();

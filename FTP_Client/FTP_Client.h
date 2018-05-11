@@ -34,14 +34,17 @@ struct My_IP_Address {
 
 		string str(buffer);
 
-		int pos = str.find_first_of('.');
-		int pos2 = str.find('.', pos + 1);
-		int pos3 = str.find_last_of('.');
+		if (str != "")
+		{
+			int pos = str.find_first_of('.');
+			int pos2 = str.find('.', pos + 1);
+			int pos3 = str.find_last_of('.');
 
-		x1 = stoi(str.substr(0, pos));
-		x2 = stoi(str.substr(pos + 1, pos2 - pos - 1));
-		x3 = stoi(str.substr(pos2 + 1, pos3 - pos2 - 1));
-		x4 = stoi(str.substr(pos3 + 1));
+			x1 = stoi(str.substr(0, pos));
+			x2 = stoi(str.substr(pos + 1, pos2 - pos - 1));
+			x3 = stoi(str.substr(pos2 + 1, pos3 - pos2 - 1));
+			x4 = stoi(str.substr(pos3 + 1));
+		}
 	}
 
 	My_IP_Address(int h1, int h2, int h3, int h4) {
@@ -229,7 +232,7 @@ public:
 //************************************
 // Class:		IHandleCommand
 // Access:		public
-// Using:		Interfaces for handling commands
+// Using:		Class Acts as an Interfaces for handling commands
 //************************************
 class IHandleCommand : public FTP_Client {
 private:
@@ -276,7 +279,7 @@ private:
 	// Returns:   int : port used in command
 	// Qualifier: execute PORT Command
 	//************************************
-	int portCommand();
+	int sendPORTCommand();
 
 	//************************************
 	// Method:    checkSpaceInParameter
@@ -328,6 +331,8 @@ private:
 	void getFileListFromBuffer(vector<string> &fileList, const char * buf);
 
 	void getFileTypesFromParam(vector<string> &fileTypes, string param);
+
+	void getFileListInCurrentDir(vector<string> &fileList, const string dir);
 public:
 
 	//************************************
@@ -380,8 +385,8 @@ public:
 	void pwd();
 
 	//************************************
-	// Method:    oneArgCommands
-	// FullName:  IHandleCommand::oneArgCommands
+	// Method:    nonPortRelatedCommands
+	// FullName:  IHandleCommand::nonPortRelatedCommands
 	// Access:    public
 	// Returns:   void
 	// Qualifier: execute commands which require 1 argument (DELETE,CD,MKDIR,RMDIR)
@@ -390,5 +395,5 @@ public:
 	// Parameter: const int commandLength
 	// Parameter: const char * format
 	//************************************
-	void oneArgCommands(const string command, const string noti, const int commandLength, const char * format);
+	void nonPortRelatedCommands(const string command, const string noti, const int commandLength, const char * format);
 };

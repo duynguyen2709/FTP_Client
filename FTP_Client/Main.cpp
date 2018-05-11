@@ -21,7 +21,7 @@ CWinApp theApp;
 //			  ,change command to lowercase to compare with list
 // Parameter: string command
 //************************************
-inline string FormatCommand(string command)
+inline void FormatCommand(string &command)
 {
 	//DELETE SPACES AT END
 	int pos = command.size() - 1;
@@ -45,8 +45,6 @@ inline string FormatCommand(string command)
 			command[i] = tolower(command[i]);
 	}
 	else transform(command.begin(), command.end(), command.begin(), ::tolower);
-
-	return command;
 }
 
 inline void init() {
@@ -104,8 +102,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 			enter: cout << ftp_str;
 				try {
 					getline(cin, command);
-
-					command = FormatCommand(command);
+					FormatCommand(command);
 
 					if (command == "quit" || command == "exit")
 					{

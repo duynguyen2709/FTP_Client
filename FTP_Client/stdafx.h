@@ -39,8 +39,6 @@
 #include <vector>
 #include <algorithm>
 #include <regex>
-#include <limits>
-#include <ios>
 #include <windows.h>
 #include <wininet.h>
 #include <winsock2.h>
@@ -54,6 +52,7 @@ using namespace std;
 
 #pragma comment(lib, "wininet")
 #pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "User32.lib")
 
 #define NOT_FOUND string::npos
 
