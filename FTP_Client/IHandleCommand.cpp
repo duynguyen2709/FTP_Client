@@ -9,29 +9,42 @@ SOCKET IHandleCommand::createListeningSocket(int port)
 	SOCKET ListenSocket;
 	ListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (ListenSocket == INVALID_SOCKET) {
-		wprintf(L"Created Listening Socket failed with error: %ld\n", WSAGetLastError());
-		WSACleanup();
-		return NULL;
+		ex.setErrorCode(2);
+		throw ex;
 	}
 
-	sockaddr_in service;
-	service.sin_family = AF_INET;
-	service.sin_addr.s_addr = INADDR_ANY;
-	service.sin_port = htons((u_short)port);
+	if (Mode == _ACTIVE)
+	{
+		sockaddr_in service;
+		service.sin_family = AF_INET;
+		service.sin_addr.s_addr = INADDR_ANY;
+		service.sin_port = htons((u_short)port);
 
-	if (::bind(ListenSocket,
-		(SOCKADDR *)& service, sizeof(service)) == SOCKET_ERROR) {
-		wprintf(L"Bind failed with error: %ld\n", WSAGetLastError());
-		closesocket(ListenSocket);
-		WSACleanup();
-		return NULL;
+		if (::bind(ListenSocket,
+			(SOCKADDR *)& service, sizeof(service)) == SOCKET_ERROR) {
+			closesocket(ListenSocket);
+			ex.setErrorCode(2);
+			throw ex;
+		}
+
+		if (listen(ListenSocket, 1) == SOCKET_ERROR) {
+			closesocket(ListenSocket);
+			ex.setErrorCode(2);
+			throw ex;
+		}
 	}
+	else if (Mode == _PASSIVE) {
+		sockaddr_in service;
+		service.sin_family = AF_INET;
+		service.sin_addr.s_addr = inet_addr(server.c_str());
+		service.sin_port = htons((u_short)port);
 
-	if (listen(ListenSocket, 1) == SOCKET_ERROR) {
-		wprintf(L"Listen failed with error: %ld\n", WSAGetLastError());
-		closesocket(ListenSocket);
-		WSACleanup();
-		return NULL;
+		iResult = connect(ListenSocket, (SOCKADDR *)& service, sizeof(service));
+		if (iResult == SOCKET_ERROR) {
+			iResult = closesocket(ListenSocket);
+			ex.setErrorCode(2);
+			throw ex;
+		}
 	}
 
 	return ListenSocket;
@@ -41,7 +54,17 @@ int IHandleCommand::getNextFreePort() {
 	int port;
 
 	if (PortUsed.empty())
+	{
 		port = 52700 + rand() % 2000;
+		/*struct sockaddr_in sin;
+		int addrlen = sizeof(sin);
+		if (getsockname(ClientSocket, (struct sockaddr *)&sin, &addrlen) == 0 &&
+			sin.sin_family == AF_INET &&
+			addrlen == sizeof(sin))
+		{
+			port = ntohs(sin.sin_port) + 1;
+		}*/
+	}
 	else
 		port = PortUsed.back() + 1;
 
@@ -73,6 +96,30 @@ int IHandleCommand::sendPORTCommand()
 		ex.setErrorCode(codeftp);
 		throw ex;
 	}
+
+	return port;
+}
+
+int IHandleCommand::getPortInPassiveMode()
+{
+	int port = 0, resCode = 0;
+	char buf[BUFSIZ + 1];
+	sprintf(buf, "PASV\r\n");
+	resCode = ClientSocket.Send(buf, strlen(buf), 0);
+
+	memset(buf, 0, sizeof buf);
+	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+
+	string temp(buf);
+
+	int pos = 0;
+	for (int i = 0; i < 4; i++)
+		pos = temp.find(',', pos + 1);
+
+	int pos2 = temp.find(',', pos + 1);
+	port = stoi(temp.substr(pos + 1, pos2 - pos - 1)) * 256;
+	pos = temp.find_first_of(')');
+	port += stoi(temp.substr(pos2 + 1, pos - pos2 - 1));
 
 	return port;
 }
@@ -249,7 +296,15 @@ void IHandleCommand::multipleFilesCommands(const string command)
 	else
 	{
 		for (auto fType : fileType) {
-			int port = sendPORTCommand();
+			int port;
+			if (Mode == _ACTIVE)
+			{
+				port = sendPORTCommand();
+			}
+			else if (Mode == _PASSIVE)
+			{
+				port = getPortInPassiveMode();
+			}
 
 			SOCKET ListenSocket = createListeningSocket(port);
 
@@ -261,29 +316,51 @@ void IHandleCommand::multipleFilesCommands(const string command)
 			resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
 			cout << buf;
 
-			SOCKET AcceptSocket;
-			AcceptSocket = accept(ListenSocket, NULL, NULL);
-
-			memset(buf, 0, sizeof buf);
-			resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
-			cout << buf;
-			memset(buf, 0, sizeof buf);
-
-			if (AcceptSocket == INVALID_SOCKET) {
-				wprintf(L"Accept failed with error: %ld\n", WSAGetLastError());
-			}
-			else
+			int codeftp;
+			sscanf(buf, "%d", &codeftp);
+			if (codeftp != 150)
 			{
-				int iResult;
+				closesocket(ListenSocket);
+				ex.setErrorCode(codeftp);
+				throw ex;
+			}
 
-				while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
+			int iResult;
+
+			if (Mode == _ACTIVE)
+			{
+				SOCKET AcceptSocket;
+				AcceptSocket = accept(ListenSocket, NULL, NULL);
+
+				memset(buf, 0, sizeof buf);
+				resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+				cout << buf;
+				memset(buf, 0, sizeof buf);
+
+				if (AcceptSocket == INVALID_SOCKET) {
+					wprintf(L"Accept failed with error: %ld\n", WSAGetLastError());
+				}
+				else
+				{
+					while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
+						getFileListFromBuffer(fileList, buf);
+						memset(buf, 0, iResult);
+					}
+				}
+				closesocket(AcceptSocket);
+			}
+			else if (Mode == _PASSIVE)
+			{
+				memset(buf, 0, sizeof buf);
+
+				while ((iResult = recv(ListenSocket, buf, BUFSIZ, 0)) > 0) {
 					getFileListFromBuffer(fileList, buf);
 					memset(buf, 0, iResult);
 				}
 			}
 
 			closesocket(ListenSocket);
-			closesocket(AcceptSocket);
+
 			memset(buf, 0, sizeof buf);
 		}
 	}
@@ -325,7 +402,13 @@ void IHandleCommand::portRelatedCommands(string command)
 
 	int resCode;
 
-	int port = sendPORTCommand();
+	int port = 0;
+	if (Mode == _ACTIVE) {
+		port = sendPORTCommand();
+	}
+	else if (Mode == _PASSIVE) {
+		port = getPortInPassiveMode();
+	}
 
 	SOCKET ListenSocket = createListeningSocket(port);
 
@@ -341,50 +424,80 @@ void IHandleCommand::portRelatedCommands(string command)
 	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
 	cout << buf;
 
-	int codeftp;
+	int iResult;
+	int codeftp = 0;
+
 	sscanf(buf, "%d", &codeftp);
 	if (codeftp != 150)
 	{
+		closesocket(ListenSocket);
 		ex.setErrorCode(codeftp);
 		throw ex;
 	}
 
-	SOCKET AcceptSocket;
-	AcceptSocket = accept(ListenSocket, NULL, NULL);
+	string temp(buf);
+	bool check_226 = false;
+	if (temp.find("226") != NOT_FOUND)
+		check_226 = true;
 
-	if (AcceptSocket == INVALID_SOCKET) {
-		wprintf(L"Accept failed with error: %ld\n", WSAGetLastError());
-	}
-	else
-	{
-		int iResult;
+	memset(buf, 0, sizeof buf);
 
-		//DIR/LS Command
-		memset(buf, 0, sizeof buf);
-
+	if (Mode == _PASSIVE) {
 		if (command.find("dir") != NOT_FOUND || command.find("ls") != NOT_FOUND) {
-			while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
+			while ((iResult = recv(ListenSocket, buf, BUFSIZ, 0)) > 0) {
 				cout << buf;
 				memset(buf, 0, iResult);
 			}
 		}
-
-		//GET Command
 		else if (command.find("get") != NOT_FOUND)
-			get(AcceptSocket, dstFileName);
-
-		//PUT Command
+			get(ListenSocket, dstFileName);
 		else if (command.find("put") != NOT_FOUND)
-			put(AcceptSocket, srcFileName);
+			put(ListenSocket, srcFileName);
+	}
+	else if (Mode == _ACTIVE)
+	{
+		SOCKET AcceptSocket;
+		AcceptSocket = accept(ListenSocket, NULL, NULL);
+
+		if (AcceptSocket == INVALID_SOCKET) {
+			closesocket(ListenSocket);
+			ex.setErrorCode(2);
+			throw ex;
+		}
+		else
+		{
+			//DIR/LS Command
+
+			if (command.find("dir") != NOT_FOUND || command.find("ls") != NOT_FOUND) {
+				while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
+					cout << buf;
+					memset(buf, 0, iResult);
+				}
+			}
+
+			//GET Command
+			else if (command.find("get") != NOT_FOUND)
+				get(AcceptSocket, dstFileName);
+
+			//PUT Command
+			else if (command.find("put") != NOT_FOUND)
+				put(AcceptSocket, srcFileName);
+		}
+
+		closesocket(AcceptSocket);
 	}
 
-	closesocket(ListenSocket);
-	closesocket(AcceptSocket);
-
-	memset(buf, 0, sizeof buf);
-	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
-	cout << buf;
-	memset(buf, 0, sizeof buf);
+	if ((iResult = closesocket(ListenSocket)) == SOCKET_ERROR) {
+		cout << "Close socket error :" << WSAGetLastError() << endl;
+		ex.setErrorCode(2);
+		throw ex;
+	}
+	if (check_226 == false)
+	{
+		memset(buf, 0, sizeof buf);
+		resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+		cout << buf;
+	}
 }
 
 void IHandleCommand::get(SOCKET AcceptSocket, string dstFileName)

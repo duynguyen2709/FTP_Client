@@ -37,7 +37,6 @@
 #include <utility>
 #include <string>
 #include <vector>
-#include <algorithm>
 #include <regex>
 #include <windows.h>
 #include <wininet.h>

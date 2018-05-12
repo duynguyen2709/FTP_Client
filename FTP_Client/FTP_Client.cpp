@@ -8,6 +8,7 @@ My_IP_Address *FTP_Client::ipAddress = nullptr;
 FTP_Client::FTP_Client()
 {
 	ConnectionStatus = false;
+	Mode = _ACTIVE;
 	CommandHandler = static_cast<IHandleCommand *>(&(*this));
 
 	WSADATA wsaData;
@@ -290,6 +291,7 @@ void FTP_Client::initCommandList()
 	CommandList.push_back("rmdir");
 	CommandList.push_back("pwd");
 	CommandList.push_back("passive");
+	CommandList.push_back("active");
 	CommandList.push_back("quit");
 	CommandList.push_back("exit");
 }
@@ -345,7 +347,15 @@ void FTP_Client::executeCommand(const string command)
 	case PWD:
 		CommandHandler->pwd();
 		break;
+
 	case PASSIVE:
+		Mode = _PASSIVE;
+		cout << "Switched to PASSIVE Mode" << endl;
+		break;
+
+	case ACTIVE:
+		Mode = _ACTIVE;
+		cout << "Switched to ACTIVE Mode" << endl;
 		break;
 
 	default:

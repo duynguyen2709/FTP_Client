@@ -7,6 +7,7 @@ void ResponseErrorException::initErrorCodeList()
 {
 	ErrorCodeList.push_back(make_pair(0, "Not connected"));
 	ErrorCodeList.push_back(make_pair(1, "Invalid command"));
+	ErrorCodeList.push_back(make_pair(2, "Socket connection failed"));
 	ErrorCodeList.push_back(make_pair(200, "Command okay"));
 	ErrorCodeList.push_back(make_pair(202, "Command not implemented, superfluous at this site."));
 	ErrorCodeList.push_back(make_pair(421, "Service not available, closing control connection."));

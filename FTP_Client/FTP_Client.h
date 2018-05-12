@@ -6,10 +6,10 @@
 #pragma comment(lib, "Ws2_32.lib")
 
 struct My_IP_Address {
-	unsigned int x1;
-	unsigned int x2;
-	unsigned int x3;
-	unsigned int x4;
+	unsigned int x1 = 0;
+	unsigned int x2 = 0;
+	unsigned int x3 = 0;
+	unsigned int x4 = 0;
 
 	//************************************
 	// Method:    My_IP_Address
@@ -75,9 +75,15 @@ enum Command {
 	RMDIR,
 	PWD,
 	PASSIVE,
+	ACTIVE,
 	QUIT,
 	EXIT,
 	_NULL
+};
+
+enum ConnectionMode {
+	_ACTIVE,
+	_PASSIVE
 };
 
 class IHandleCommand;
@@ -98,9 +104,17 @@ protected:
 	//************************************
 	CSocket ClientSocket;
 
-private:
+	//************************************
+	// Field:			Mode
+	// Data type:		ConnectionMode
+	// Access:			protected
+	// Description:		Current Connecting Mode
+	//************************************
+	ConnectionMode Mode;
 
 	string server = "127.0.0.1";
+
+private:
 
 	//************************************
 	// Field:			ConnectionStatus
@@ -273,13 +287,15 @@ private:
 	int getNextFreePort();
 
 	//************************************
-	// Method:    portCommand
+	// Method:    sendPORTCommand
 	// FullName:  IHandleCommand::portCommand
 	// Access:    private
 	// Returns:   int : port used in command
 	// Qualifier: execute PORT Command
 	//************************************
 	int sendPORTCommand();
+
+	int getPortInPassiveMode();
 
 	//************************************
 	// Method:    checkSpaceInParameter
