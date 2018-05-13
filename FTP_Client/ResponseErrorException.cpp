@@ -15,7 +15,7 @@ void ResponseErrorException::initErrorCodeList()
 	ErrorCodeList.push_back(make_pair(501, "Syntax error in parameters or arguments."));
 	ErrorCodeList.push_back(make_pair(502, "Command not implemented."));
 	ErrorCodeList.push_back(make_pair(503, "Bad sequence of commands."));
-	ErrorCodeList.push_back(make_pair(530, "Not logged in."));
+	ErrorCodeList.push_back(make_pair(530, "Login or password incorrect."));
 	ErrorCodeList.push_back(make_pair(550, "Requested action not taken."));
 }
 

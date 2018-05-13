@@ -3,12 +3,12 @@
 
 vector<int> IHandleCommand::PortUsed = {};
 
-SOCKET IHandleCommand::createListeningSocket(int port)
+SOCKET IHandleCommand::createDataSocket(int port)
 {
 	int iResult;
-	SOCKET ListenSocket;
-	ListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (ListenSocket == INVALID_SOCKET) {
+	SOCKET DataSocket;
+	DataSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (DataSocket == INVALID_SOCKET) {
 		ex.setErrorCode(2);
 		throw ex;
 	}
@@ -20,15 +20,15 @@ SOCKET IHandleCommand::createListeningSocket(int port)
 		service.sin_addr.s_addr = INADDR_ANY;
 		service.sin_port = htons((u_short)port);
 
-		if (::bind(ListenSocket,
+		if (::bind(DataSocket,
 			(SOCKADDR *)& service, sizeof(service)) == SOCKET_ERROR) {
-			closesocket(ListenSocket);
+			closesocket(DataSocket);
 			ex.setErrorCode(2);
 			throw ex;
 		}
 
-		if (listen(ListenSocket, 1) == SOCKET_ERROR) {
-			closesocket(ListenSocket);
+		if (listen(DataSocket, 1) == SOCKET_ERROR) {
+			closesocket(DataSocket);
 			ex.setErrorCode(2);
 			throw ex;
 		}
@@ -39,15 +39,15 @@ SOCKET IHandleCommand::createListeningSocket(int port)
 		service.sin_addr.s_addr = inet_addr(server.c_str());
 		service.sin_port = htons((u_short)port);
 
-		iResult = connect(ListenSocket, (SOCKADDR *)& service, sizeof(service));
+		iResult = connect(DataSocket, (SOCKADDR *)& service, sizeof(service));
 		if (iResult == SOCKET_ERROR) {
-			iResult = closesocket(ListenSocket);
+			iResult = closesocket(DataSocket);
 			ex.setErrorCode(2);
 			throw ex;
 		}
 	}
 
-	return ListenSocket;
+	return DataSocket;
 }
 
 int IHandleCommand::getNextFreePort() {
@@ -109,6 +109,14 @@ int IHandleCommand::getPortInPassiveMode()
 
 	memset(buf, 0, sizeof buf);
 	resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+
+	string find_226(buf);
+	bool check_226 = false;
+	if (find_226.find("226") != NOT_FOUND)
+	{
+		memset(buf, 0, sizeof buf);
+		resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+	}
 
 	string temp(buf);
 
@@ -297,6 +305,7 @@ void IHandleCommand::multipleFilesCommands(const string command)
 	{
 		for (auto fType : fileType) {
 			int port;
+
 			if (Mode == _ACTIVE)
 			{
 				port = sendPORTCommand();
@@ -306,7 +315,7 @@ void IHandleCommand::multipleFilesCommands(const string command)
 				port = getPortInPassiveMode();
 			}
 
-			SOCKET ListenSocket = createListeningSocket(port);
+			SOCKET ListenSocket = createDataSocket(port);
 
 			memset(buf, 0, sizeof buf);
 			sprintf(buf, "NLST %s\r\n", fType.c_str());
@@ -410,7 +419,7 @@ void IHandleCommand::portRelatedCommands(string command)
 		port = getPortInPassiveMode();
 	}
 
-	SOCKET ListenSocket = createListeningSocket(port);
+	SOCKET ListenSocket = createDataSocket(port);
 
 	string srcFileName, dstFileName;
 
@@ -528,6 +537,7 @@ void IHandleCommand::put(SOCKET AcceptSocket, string srcFileName)
 	int length = inputFile.tellg();
 	inputFile.seekg(0, ios_base::beg);
 
+	//load file to buffer and send
 	while (length > BUFSIZ)
 	{
 		inputFile.read(buf, BUFSIZ);

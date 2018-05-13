@@ -164,6 +164,15 @@ Command FTP_Client::getCommandValue(string command)
 			throw ex;
 		}
 	}
+	else if (command == "active")
+	{
+		if (pos == NOT_FOUND)
+			cmd = ACTIVE;
+		else {
+			ex.setErrorCode(501);
+			throw ex;
+		}
+	}
 
 	return cmd;
 }

@@ -268,14 +268,14 @@ private:
 	static vector<int> PortUsed;
 
 	//************************************
-	// Method:    createListeningSocket
+	// Method:    createDataSocket
 	// FullName:  IHandleCommand::createListeningSocket
 	// Access:    private
 	// Returns:   SOCKET
-	// Qualifier: create a socket for accepting incoming connection
+	// Qualifier: create a socket for transfering data
 	// Parameter: const int port
 	//************************************
-	SOCKET createListeningSocket(const int port);
+	SOCKET createDataSocket(const int port);
 
 	//************************************
 	// Method:    getNextFreePort

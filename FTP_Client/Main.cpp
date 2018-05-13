@@ -57,7 +57,7 @@ inline void init() {
 	// 	else
 	// 		FTP_Client::ipAddress = new My_IP_Address(127, 0, 0, 1);
 
-	FTP_Client::ipAddress = new My_IP_Address(118, 68, 65, 101);
+	FTP_Client::ipAddress = new My_IP_Address(42, 119, 18, 136);
 
 	ResponseErrorException::initErrorCodeList();
 	FTP_Client::initCommandList();
