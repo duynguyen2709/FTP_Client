@@ -130,6 +130,8 @@ private:
 	//************************************
 	IHandleCommand *CommandHandler;
 
+	void setOwnIP();
+
 	//************************************
 	// Method:    checkLegitIPAddress
 	// FullName:  FTP_Client::checkLegitIPAddress

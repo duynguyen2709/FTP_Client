@@ -24,6 +24,32 @@ FTP_Client::~FTP_Client()
 	ClientSocket.Close();
 }
 
+void FTP_Client::setOwnIP()
+{
+	regex local_ip("^192\.168\..+$");
+	if (server == "127.0.0.1" || regex_match(server, local_ip)) {
+		struct sockaddr_in m_addr;
+		socklen_t len;
+
+		len = sizeof m_addr;
+		getsockname(ClientSocket, (struct sockaddr*)&m_addr, &len);
+		string str(inet_ntoa(m_addr.sin_addr));
+
+		int pos = str.find_first_of('.');
+		int pos2 = str.find('.', pos + 1);
+		int pos3 = str.find_last_of('.');
+
+		int x1 = stoi(str.substr(0, pos));
+		int x2 = stoi(str.substr(pos + 1, pos2 - pos - 1));
+		int x3 = stoi(str.substr(pos2 + 1, pos3 - pos2 - 1));
+		int x4 = stoi(str.substr(pos3 + 1));
+		ipAddress = new My_IP_Address(x1, x2, x3, x4);
+	}
+	else {
+		ipAddress = new My_IP_Address();
+	}
+}
+
 bool FTP_Client::checkLegitIPAddress(const string command)
 {
 	string IP_Server;
@@ -264,9 +290,10 @@ bool FTP_Client::login(const string command)
 		cin.ignore();
 		cin.clear();
 
-		if (server == "127.0.0.1") {
-			ipAddress = new My_IP_Address(127, 0, 0, 1);
-		}
+		cout << endl << "Getting Info...Please wait..." << endl;
+		setOwnIP();
+		cout << "Done!" << endl;
+
 		return true;
 	}
 	catch (ResponseErrorException &e)
@@ -333,19 +360,17 @@ void FTP_Client::executeCommand(const string command)
 		CommandHandler->portRelatedCommands(command);
 		break;
 
-	case CD:
-		CommandHandler->nonPortRelatedCommands(command, "Remote directory:", 2, "CWD %s\r\n");
-		break;
-	case LCD:
-		CommandHandler->lcd(command);
-		break;
-	case _DELETE:
-		CommandHandler->nonPortRelatedCommands(command, "Remote file: ", 6, "DELE %s\r\n");
-		break;
 	case MPUT:
 	case MGET:
 	case MDELETE:
 		CommandHandler->multipleFilesCommands(command);
+		break;
+
+	case CD:
+		CommandHandler->nonPortRelatedCommands(command, "Remote directory:", 2, "CWD %s\r\n");
+		break;
+	case _DELETE:
+		CommandHandler->nonPortRelatedCommands(command, "Remote file: ", 6, "DELE %s\r\n");
 		break;
 	case MKDIR:
 		CommandHandler->nonPortRelatedCommands(command, "Directory name: ", 5, "XMKD %s\r\n");
@@ -353,15 +378,17 @@ void FTP_Client::executeCommand(const string command)
 	case RMDIR:
 		CommandHandler->nonPortRelatedCommands(command, "Directory name: ", 5, "XRMD %s\r\n");
 		break;
+
+	case LCD:
+		CommandHandler->lcd(command);
+		break;
 	case PWD:
 		CommandHandler->pwd();
 		break;
-
 	case PASSIVE:
 		Mode = _PASSIVE;
 		cout << "Switched to PASSIVE Mode" << endl;
 		break;
-
 	case ACTIVE:
 		Mode = _ACTIVE;
 		cout << "Switched to ACTIVE Mode" << endl;

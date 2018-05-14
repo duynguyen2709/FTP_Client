@@ -48,21 +48,10 @@ inline void FormatCommand(string &command)
 }
 
 inline void init() {
-	cout << "Initializing...Please wait..." << endl;
-
 	LPDWORD flag = nullptr;
-
-	// 	if (InternetGetConnectedState(flag, 0) == TRUE)
-	// 		FTP_Client::ipAddress = new My_IP_Address();
-	// 	else
-	// 		FTP_Client::ipAddress = new My_IP_Address(127, 0, 0, 1);
-
-	FTP_Client::ipAddress = new My_IP_Address(42, 119, 18, 136);
 
 	ResponseErrorException::initErrorCodeList();
 	FTP_Client::initCommandList();
-
-	cout << "Enter FTP command. \"?\" or \"help\" for command help" << endl;
 }
 
 int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])

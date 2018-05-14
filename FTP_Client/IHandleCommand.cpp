@@ -709,6 +709,10 @@ void IHandleCommand::getFileListInCurrentDir(vector<string> &fileList, const str
 
 	hFind = FindFirstFile(szDir, &ffd);
 
+	if (hFind == INVALID_HANDLE_VALUE) {
+		ex.setErrorCode(3);
+		throw ex;
+	}
 	do
 	{
 		char ch[260];
