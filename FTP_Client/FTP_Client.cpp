@@ -5,6 +5,7 @@
 vector<string> FTP_Client::CommandList = {};
 My_IP_Address *FTP_Client::ipAddress = nullptr;
 
+//----------------------------------------------
 FTP_Client::FTP_Client()
 {
 	ConnectionStatus = false;
@@ -24,9 +25,33 @@ FTP_Client::~FTP_Client()
 	ClientSocket.Close();
 }
 
+void FTP_Client::initCommandList()
+{
+	CommandList.push_back("ftp");
+	CommandList.push_back("open");
+	CommandList.push_back("ls");
+	CommandList.push_back("dir");
+	CommandList.push_back("put");
+	CommandList.push_back("get");
+	CommandList.push_back("mput");
+	CommandList.push_back("mget");
+	CommandList.push_back("cd");
+	CommandList.push_back("lcd");
+	CommandList.push_back("delete");
+	CommandList.push_back("mdelete");
+	CommandList.push_back("mkdir");
+	CommandList.push_back("rmdir");
+	CommandList.push_back("pwd");
+	CommandList.push_back("passive");
+	CommandList.push_back("active");
+	CommandList.push_back("quit");
+	CommandList.push_back("exit");
+}
+
 void FTP_Client::setOwnIP()
 {
 	regex local_ip("^192\.168\..+$");
+
 	if (server == "127.0.0.1" || regex_match(server, local_ip)) {
 		struct sockaddr_in m_addr;
 		socklen_t len;
@@ -307,29 +332,6 @@ bool FTP_Client::login(const string command)
 	}
 
 	return false;
-}
-
-void FTP_Client::initCommandList()
-{
-	CommandList.push_back("ftp");
-	CommandList.push_back("open");
-	CommandList.push_back("ls");
-	CommandList.push_back("dir");
-	CommandList.push_back("put");
-	CommandList.push_back("get");
-	CommandList.push_back("mput");
-	CommandList.push_back("mget");
-	CommandList.push_back("cd");
-	CommandList.push_back("lcd");
-	CommandList.push_back("delete");
-	CommandList.push_back("mdelete");
-	CommandList.push_back("mkdir");
-	CommandList.push_back("rmdir");
-	CommandList.push_back("pwd");
-	CommandList.push_back("passive");
-	CommandList.push_back("active");
-	CommandList.push_back("quit");
-	CommandList.push_back("exit");
 }
 
 bool FTP_Client::checkCommand(string command)

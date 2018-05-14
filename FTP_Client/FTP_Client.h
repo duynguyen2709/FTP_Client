@@ -3,7 +3,6 @@
 #include "resource.h"
 #include "stdafx.h"
 #include "ResponseErrorException.h"
-#pragma comment(lib, "Ws2_32.lib")
 
 struct My_IP_Address {
 	unsigned int x1 = 0;
@@ -47,6 +46,17 @@ struct My_IP_Address {
 		}
 	}
 
+	//************************************
+	// Method:    My_IP_Address
+	// FullName:  My_IP_Address::My_IP_Address
+	// Access:    public
+	// Returns:
+	// Qualifier: Set Own IP Address from parameters
+	// Parameter: int h1
+	// Parameter: int h2
+	// Parameter: int h3
+	// Parameter: int h4
+	//************************************
 	My_IP_Address(int h1, int h2, int h3, int h4) {
 		x1 = h1;
 		x2 = h2;
@@ -81,6 +91,11 @@ enum Command {
 	_NULL
 };
 
+//************************************
+// Enum:		ConnectionMode
+// Access:		public
+// Data:		Contains 2 Connection Modes in FTP
+//************************************
 enum ConnectionMode {
 	_ACTIVE,
 	_PASSIVE
@@ -112,12 +127,19 @@ protected:
 	//************************************
 	ConnectionMode Mode;
 
+	//************************************
+	// Field:			server
+	// Data type:		string
+	// Access:			protected
+	// Description:		The Server which client is currently connecting to
+	//************************************
 	string server = "127.0.0.1";
 
 private:
 
 	//************************************
 	// Field:			ConnectionStatus
+	// Data Type:		bool
 	// Access:			private
 	// Description:		Connection status (Logon or Not)
 	//************************************
@@ -125,11 +147,19 @@ private:
 
 	//************************************
 	// Field:			CommandHandler
+	// Data Type:		IHandleCommand
 	// Access:			private
 	// Description:		Main Handler to execute commands
 	//************************************
 	IHandleCommand *CommandHandler;
 
+	//************************************
+	// Method:    setOwnIP
+	// FullName:  FTP_Client::setOwnIP
+	// Access:    private
+	// Returns:   void
+	// Qualifier: Set Own IP Address based on server (localhost/LAN/Internet)
+	//************************************
 	void setOwnIP();
 
 	//************************************
@@ -166,6 +196,7 @@ public:
 
 	//************************************
 	// Field:			CommandList
+	// Data Type:		static vector<string>
 	// Access:			public
 	// Description:		Contains commands list in string type
 	//************************************
@@ -173,6 +204,7 @@ public:
 
 	//************************************
 	// Field:			ipAddress
+	// Data Type:		static My_IP_Address
 	// Access:			public
 	// Description:		Contains client's ip address
 	//************************************
@@ -182,7 +214,6 @@ public:
 	// Method:    FTP_Client
 	// FullName:  FTP_Client::FTP_Client
 	// Access:    public
-	// Returns:
 	// Qualifier: Default Constructor, Init Handler,wsaData
 	//************************************
 	FTP_Client();
@@ -191,7 +222,6 @@ public:
 	// Method:    ~FTP_Client
 	// FullName:  FTP_Client::~FTP_Client
 	// Access:    public
-	// Returns:
 	// Qualifier: Default Destructor, Close Main Socket
 	//************************************
 	~FTP_Client();
@@ -297,6 +327,13 @@ private:
 	//************************************
 	int sendPORTCommand();
 
+	//************************************
+	// Method:    getPortInPassiveMode
+	// FullName:  IHandleCommand::getPortInPassiveMode
+	// Access:    private
+	// Returns:   int
+	// Qualifier: Send PASV Command & Get Port in response
+	//************************************
 	int getPortInPassiveMode();
 
 	//************************************
@@ -346,11 +383,39 @@ private:
 	//************************************
 	void put(SOCKET AcceptSocket, const string srcFileName);
 
+	//************************************
+	// Method:    getFileListFromBuffer
+	// FullName:  IHandleCommand::getFileListFromBuffer
+	// Access:    private
+	// Returns:   void
+	// Qualifier: Parse buffer to get file list
+	// Parameter: vector<string> & fileList
+	// Parameter: const char * buf
+	//************************************
 	void getFileListFromBuffer(vector<string> &fileList, const char * buf);
 
+	//************************************
+	// Method:    getFileTypesFromParam
+	// FullName:  IHandleCommand::getFileTypesFromParam
+	// Access:    private
+	// Returns:   void
+	// Qualifier: Parse Parameters to get file types to send in NLST Command
+	// Parameter: vector<string> & fileTypes
+	// Parameter: string param
+	//************************************
 	void getFileTypesFromParam(vector<string> &fileTypes, string param);
 
+	//************************************
+	// Method:    getFileListInCurrentDir
+	// FullName:  IHandleCommand::getFileListInCurrentDir
+	// Access:    private
+	// Returns:   void
+	// Qualifier: Get files fit condition in current directory
+	// Parameter: vector<string> & fileList
+	// Parameter: const string dir
+	//************************************
 	void getFileListInCurrentDir(vector<string> &fileList, const string dir);
+
 public:
 
 	//************************************

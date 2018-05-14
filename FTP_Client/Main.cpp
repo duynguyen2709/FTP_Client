@@ -13,15 +13,15 @@ CWinApp theApp;
 #define ftp_str "ftp>"
 
 //************************************
-// Method:    FormatCommand
-// FullName:  FormatCommand
+// Method:    formatCommand
+// FullName:  formatCommand
 // Access:    public
 // Returns:   std::string
 // Qualifier: delete space at start & end of command
 //			  ,change command to lowercase to compare with list
-// Parameter: string command
+// Parameter: string &command
 //************************************
-inline void FormatCommand(string &command)
+inline void formatCommand(string &command)
 {
 	//DELETE SPACES AT END
 	int pos = command.size() - 1;
@@ -45,13 +45,6 @@ inline void FormatCommand(string &command)
 			command[i] = tolower(command[i]);
 	}
 	else transform(command.begin(), command.end(), command.begin(), ::tolower);
-}
-
-inline void init() {
-	LPDWORD flag = nullptr;
-
-	ResponseErrorException::initErrorCodeList();
-	FTP_Client::initCommandList();
 }
 
 int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
@@ -84,18 +77,22 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 			//START OF MAIN CODE
 			//
 
-			init();
+			//Initialize Static Fields in Classes
+			ResponseErrorException::initErrorCodeList();
+			FTP_Client::initCommandList();
+
+			//DECLARE VARIABLES
 			FTP_Client client;
 			ResponseErrorException ex;
 			string command;
 
-			//main loop
+			//MAIN LOOP
 			while (1)
 			{
 			enter: cout << ftp_str;
 				try {
 					getline(cin, command);
-					FormatCommand(command);
+					formatCommand(command);
 
 					if (command == "quit" || command == "exit")
 					{

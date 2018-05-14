@@ -55,15 +55,7 @@ int IHandleCommand::getNextFreePort() {
 
 	if (PortUsed.empty())
 	{
-		port = 52700 + rand() % 2000;
-		/*struct sockaddr_in sin;
-		int addrlen = sizeof(sin);
-		if (getsockname(ClientSocket, (struct sockaddr *)&sin, &addrlen) == 0 &&
-			sin.sin_family == AF_INET &&
-			addrlen == sizeof(sin))
-		{
-			port = ntohs(sin.sin_port) + 1;
-		}*/
+		port = 52700 + rand() % 5000;
 	}
 	else
 		port = PortUsed.back() + 1;
@@ -315,7 +307,7 @@ void IHandleCommand::multipleFilesCommands(const string command)
 				port = getPortInPassiveMode();
 			}
 
-			SOCKET ListenSocket = createDataSocket(port);
+			SOCKET DataSocket = createDataSocket(port);
 
 			memset(buf, 0, sizeof buf);
 			sprintf(buf, "NLST %s\r\n", fType.c_str());
@@ -329,7 +321,7 @@ void IHandleCommand::multipleFilesCommands(const string command)
 			sscanf(buf, "%d", &codeftp);
 			if (codeftp != 150)
 			{
-				closesocket(ListenSocket);
+				closesocket(DataSocket);
 				ex.setErrorCode(codeftp);
 				throw ex;
 			}
@@ -339,7 +331,7 @@ void IHandleCommand::multipleFilesCommands(const string command)
 			if (Mode == _ACTIVE)
 			{
 				SOCKET AcceptSocket;
-				AcceptSocket = accept(ListenSocket, NULL, NULL);
+				AcceptSocket = accept(DataSocket, NULL, NULL);
 
 				memset(buf, 0, sizeof buf);
 				resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
@@ -362,13 +354,13 @@ void IHandleCommand::multipleFilesCommands(const string command)
 			{
 				memset(buf, 0, sizeof buf);
 
-				while ((iResult = recv(ListenSocket, buf, BUFSIZ, 0)) > 0) {
+				while ((iResult = recv(DataSocket, buf, BUFSIZ, 0)) > 0) {
 					getFileListFromBuffer(fileList, buf);
 					memset(buf, 0, iResult);
 				}
 			}
 
-			closesocket(ListenSocket);
+			closesocket(DataSocket);
 
 			memset(buf, 0, sizeof buf);
 		}
@@ -419,7 +411,7 @@ void IHandleCommand::portRelatedCommands(string command)
 		port = getPortInPassiveMode();
 	}
 
-	SOCKET ListenSocket = createDataSocket(port);
+	SOCKET DataSocket = createDataSocket(port);
 
 	string srcFileName, dstFileName;
 
@@ -439,7 +431,7 @@ void IHandleCommand::portRelatedCommands(string command)
 	sscanf(buf, "%d", &codeftp);
 	if (codeftp != 150)
 	{
-		closesocket(ListenSocket);
+		closesocket(DataSocket);
 		ex.setErrorCode(codeftp);
 		throw ex;
 	}
@@ -453,23 +445,23 @@ void IHandleCommand::portRelatedCommands(string command)
 
 	if (Mode == _PASSIVE) {
 		if (command.find("dir") != NOT_FOUND || command.find("ls") != NOT_FOUND) {
-			while ((iResult = recv(ListenSocket, buf, BUFSIZ, 0)) > 0) {
+			while ((iResult = recv(DataSocket, buf, BUFSIZ, 0)) > 0) {
 				cout << buf;
 				memset(buf, 0, iResult);
 			}
 		}
 		else if (command.find("get") != NOT_FOUND)
-			get(ListenSocket, dstFileName);
+			get(DataSocket, dstFileName);
 		else if (command.find("put") != NOT_FOUND)
-			put(ListenSocket, srcFileName);
+			put(DataSocket, srcFileName);
 	}
 	else if (Mode == _ACTIVE)
 	{
 		SOCKET AcceptSocket;
-		AcceptSocket = accept(ListenSocket, NULL, NULL);
+		AcceptSocket = accept(DataSocket, NULL, NULL);
 
 		if (AcceptSocket == INVALID_SOCKET) {
-			closesocket(ListenSocket);
+			closesocket(DataSocket);
 			ex.setErrorCode(2);
 			throw ex;
 		}
@@ -496,11 +488,12 @@ void IHandleCommand::portRelatedCommands(string command)
 		closesocket(AcceptSocket);
 	}
 
-	if ((iResult = closesocket(ListenSocket)) == SOCKET_ERROR) {
+	if ((iResult = closesocket(DataSocket)) == SOCKET_ERROR) {
 		cout << "Close socket error :" << WSAGetLastError() << endl;
 		ex.setErrorCode(2);
 		throw ex;
 	}
+
 	if (check_226 == false)
 	{
 		memset(buf, 0, sizeof buf);
