@@ -296,6 +296,12 @@ void IHandleCommand::multipleFilesCommands(const string command)
 	else
 	{
 		for (auto fType : fileType) {
+
+			// 			if (fType.find(' ', 0) != NOT_FOUND) {
+			// 				fType = "\"" + fType + "\"";
+			// 			}
+			// 			string temp = "ls " + fType;
+			// 			portRelatedCommands(temp);
 			int port;
 
 			if (Mode == _ACTIVE)
@@ -339,7 +345,9 @@ void IHandleCommand::multipleFilesCommands(const string command)
 				memset(buf, 0, sizeof buf);
 
 				if (AcceptSocket == INVALID_SOCKET) {
-					wprintf(L"Accept failed with error: %ld\n", WSAGetLastError());
+					closesocket(AcceptSocket);
+					ex.setErrorCode(2);
+					throw ex;
 				}
 				else
 				{

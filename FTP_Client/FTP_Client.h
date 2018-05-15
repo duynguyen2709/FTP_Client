@@ -25,6 +25,9 @@ struct My_IP_Address {
 		hInternet = InternetOpen(NULL, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 		hFile = InternetOpenUrlA(hInternet, "https://myexternalip.com/raw", NULL, 0, INTERNET_FLAG_RELOAD, 0);
 
+		if (hFile == NULL)
+			hFile = InternetOpenUrlA(hInternet, "https://api.ipify.org/", NULL, 0, INTERNET_FLAG_RELOAD, 0);
+
 		InternetReadFile(hFile, &buffer, sizeof(buffer), &rSize);
 		buffer[rSize] = '\0';
 
