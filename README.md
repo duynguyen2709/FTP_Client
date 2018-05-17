@@ -3,7 +3,7 @@ A command-line console application for FTP Connection from Client-side which sup
 This application does not use any additional libraries except C++'s standard ones.
 ## Getting Started
 ### How to Use
-Just download or clone the repo then run EXE file in Release folder. 
+Just download or clone the repo then run EXE file in Release.rar. 
 
 You can edit the source code files then build with Visual Studio for the same result.
 
