@@ -4,29 +4,29 @@
 #include "stdafx.h"
 #include "ResponseErrorException.h"
 
-struct My_IP_Address {
+struct Client_IP_Address {
 	unsigned int x1 = 0;
 	unsigned int x2 = 0;
 	unsigned int x3 = 0;
 	unsigned int x4 = 0;
 
 	//************************************
-	// Method:    My_IP_Address
-	// FullName:  My_IP_Address::My_IP_Address
+	// Method:    Client_IP_Address
+	// FullName:  Client_IP_Address::My_IP_Address
 	// Access:    public
 	// Returns:   IP Address in Struct
 	// Qualifier: Get External IP Address
 	//************************************
-	My_IP_Address() {
+	Client_IP_Address() {
 		HINTERNET hInternet, hFile;
 		DWORD rSize = 0;
 		char buffer[47];
 
 		hInternet = InternetOpen(NULL, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
-		hFile = InternetOpenUrlA(hInternet, "https://myexternalip.com/raw", NULL, 0, INTERNET_FLAG_RELOAD, 0);
+		hFile = InternetOpenUrlA(hInternet, "https://api.ipify.org/", NULL, 0, INTERNET_FLAG_RELOAD, 0);
 
 		if (hFile == NULL)
-			hFile = InternetOpenUrlA(hInternet, "https://api.ipify.org/", NULL, 0, INTERNET_FLAG_RELOAD, 0);
+			hFile = InternetOpenUrlA(hInternet, "https://myexternalip.com/raw", NULL, 0, INTERNET_FLAG_RELOAD, 0);
 
 		InternetReadFile(hFile, &buffer, sizeof(buffer), &rSize);
 		buffer[rSize] = '\0';
@@ -50,8 +50,8 @@ struct My_IP_Address {
 	}
 
 	//************************************
-	// Method:    My_IP_Address
-	// FullName:  My_IP_Address::My_IP_Address
+	// Method:    Client_IP_Address
+	// FullName:  Client_IP_Address::My_IP_Address
 	// Access:    public
 	// Returns:
 	// Qualifier: Set Own IP Address from parameters
@@ -60,7 +60,7 @@ struct My_IP_Address {
 	// Parameter: int h3
 	// Parameter: int h4
 	//************************************
-	My_IP_Address(int h1, int h2, int h3, int h4) {
+	Client_IP_Address(int h1, int h2, int h3, int h4) {
 		x1 = h1;
 		x2 = h2;
 		x3 = h3;
@@ -211,7 +211,7 @@ public:
 	// Access:			public
 	// Description:		Contains client's ip address
 	//************************************
-	static My_IP_Address *ipAddress;
+	static Client_IP_Address *ipAddress;
 
 	//************************************
 	// Method:    FTP_Client
@@ -373,7 +373,7 @@ private:
 	// Parameter: SOCKET AcceptSocket
 	// Parameter: const string dstFileName
 	//************************************
-	void get(SOCKET AcceptSocket, const string dstFileName);
+	void get(SOCKET DataSocket, const string dstFileName);
 
 	//************************************
 	// Method:    put
@@ -384,7 +384,7 @@ private:
 	// Parameter: SOCKET AcceptSocket
 	// Parameter: const string srcFileName
 	//************************************
-	void put(SOCKET AcceptSocket, const string srcFileName);
+	void put(SOCKET DataSocket, const string srcFileName);
 
 	//************************************
 	// Method:    getFileListFromBuffer

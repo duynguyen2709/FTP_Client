@@ -3,7 +3,7 @@
 
 //static fields re-declaration
 vector<string> FTP_Client::CommandList = {};
-My_IP_Address *FTP_Client::ipAddress = nullptr;
+Client_IP_Address *FTP_Client::ipAddress = nullptr;
 
 //----------------------------------------------
 FTP_Client::FTP_Client()
@@ -68,10 +68,10 @@ void FTP_Client::setOwnIP()
 		int x2 = stoi(str.substr(pos + 1, pos2 - pos - 1));
 		int x3 = stoi(str.substr(pos2 + 1, pos3 - pos2 - 1));
 		int x4 = stoi(str.substr(pos3 + 1));
-		ipAddress = new My_IP_Address(x1, x2, x3, x4);
+		ipAddress = new Client_IP_Address(x1, x2, x3, x4);
 	}
 	else {
-		ipAddress = new My_IP_Address();
+		ipAddress = new Client_IP_Address();
 	}
 }
 

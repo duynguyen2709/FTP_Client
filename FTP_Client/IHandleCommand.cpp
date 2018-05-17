@@ -266,7 +266,7 @@ void IHandleCommand::multipleFilesCommands(const string command)
 	int pos = command.find_first_of(' ');
 
 	vector<string> fileType, fileList;
-	string param, cmd;
+	string param, cmd = "";
 	char buf[BUFSIZ + 1];
 	memset(buf, 0, sizeof buf);
 	int resCode;
@@ -296,12 +296,6 @@ void IHandleCommand::multipleFilesCommands(const string command)
 	else
 	{
 		for (auto fType : fileType) {
-
-			// 			if (fType.find(' ', 0) != NOT_FOUND) {
-			// 				fType = "\"" + fType + "\"";
-			// 			}
-			// 			string temp = "ls " + fType;
-			// 			portRelatedCommands(temp);
 			int port;
 
 			if (Mode == _ACTIVE)
@@ -323,14 +317,19 @@ void IHandleCommand::multipleFilesCommands(const string command)
 			resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
 			cout << buf;
 
+			string temp(buf);
 			int codeftp;
 			sscanf(buf, "%d", &codeftp);
-			if (codeftp != 150)
+			if (codeftp != 150 || temp.find("150") == NOT_FOUND)
 			{
 				closesocket(DataSocket);
-				ex.setErrorCode(codeftp);
-				throw ex;
+				cout << "Files not found." << endl;
+				return;
 			}
+
+			bool check_226 = false;
+			if (temp.find("226") != NOT_FOUND)
+				check_226 = true;
 
 			int iResult;
 
@@ -339,23 +338,19 @@ void IHandleCommand::multipleFilesCommands(const string command)
 				SOCKET AcceptSocket;
 				AcceptSocket = accept(DataSocket, NULL, NULL);
 
-				memset(buf, 0, sizeof buf);
-				resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
-				cout << buf;
+				if (check_226 == false)
+				{
+					memset(buf, 0, sizeof buf);
+					resCode = ClientSocket.Receive(buf, BUFSIZ, 0);
+					cout << buf;
+				}
 				memset(buf, 0, sizeof buf);
 
-				if (AcceptSocket == INVALID_SOCKET) {
-					closesocket(AcceptSocket);
-					ex.setErrorCode(2);
-					throw ex;
+				while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
+					getFileListFromBuffer(fileList, buf);
+					memset(buf, 0, iResult);
 				}
-				else
-				{
-					while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
-						getFileListFromBuffer(fileList, buf);
-						memset(buf, 0, iResult);
-					}
-				}
+
 				closesocket(AcceptSocket);
 			}
 			else if (Mode == _PASSIVE)
@@ -374,35 +369,42 @@ void IHandleCommand::multipleFilesCommands(const string command)
 		}
 	}
 
-	for (auto f : fileList) {
-		memset(buf, 0, sizeof buf);
-		cout << cmd << " " << f << "?";
+	if (!fileList.empty())
+	{
+		for (auto f : fileList) {
+			memset(buf, 0, sizeof buf);
+			cout << cmd << " " << f << "?";
 
-		if (f.find(' ', 0) != NOT_FOUND) {
-			f = "\"" + f + "\"";
-		}
+			if (f.find(' ', 0) != NOT_FOUND) {
+				f = "\"" + f + "\"";
+			}
 
-		char c;
-		cin >> c;
-		if (tolower(c) == 'y') {
-			if (cmd == "mdelete")
-			{
-				string str = "delete " + f;
-				nonPortRelatedCommands(str, "Remote file: ", 6, "DELE %s\r\n");
-			}
-			else if (cmd == "mget")
-			{
-				string str = "get " + f;
-				portRelatedCommands(str);
-			}
-			else if (cmd == "mput") {
-				string str = "put " + f;
-				portRelatedCommands(str);
+			char c;
+			cin >> c;
+			if (tolower(c) == 'y') {
+				if (cmd == "mdelete")
+				{
+					string str = "delete " + f;
+					nonPortRelatedCommands(str, "Remote file: ", 6, "DELE %s\r\n");
+				}
+				else if (cmd == "mget")
+				{
+					string str = "get " + f;
+					portRelatedCommands(str);
+				}
+				else if (cmd == "mput") {
+					string str = "put " + f;
+					portRelatedCommands(str);
+				}
 			}
 		}
+		cin.ignore();
+		cin.clear();
 	}
-	cin.ignore();
-	cin.clear();
+	else {
+		cout << "Files not found." << endl;
+		return;
+	}
 }
 
 void IHandleCommand::portRelatedCommands(string command)
@@ -436,15 +438,16 @@ void IHandleCommand::portRelatedCommands(string command)
 	int iResult;
 	int codeftp = 0;
 
+	string temp(buf);
+
 	sscanf(buf, "%d", &codeftp);
-	if (codeftp != 150)
+	if (codeftp != 150 || temp.find("150") == NOT_FOUND)
 	{
 		closesocket(DataSocket);
 		ex.setErrorCode(codeftp);
 		throw ex;
 	}
 
-	string temp(buf);
 	bool check_226 = false;
 	if (temp.find("226") != NOT_FOUND)
 		check_226 = true;
@@ -468,36 +471,27 @@ void IHandleCommand::portRelatedCommands(string command)
 		SOCKET AcceptSocket;
 		AcceptSocket = accept(DataSocket, NULL, NULL);
 
-		if (AcceptSocket == INVALID_SOCKET) {
-			closesocket(DataSocket);
-			ex.setErrorCode(2);
-			throw ex;
-		}
-		else
-		{
-			//DIR/LS Command
+		//DIR/LS Command
 
-			if (command.find("dir") != NOT_FOUND || command.find("ls") != NOT_FOUND) {
-				while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
-					cout << buf;
-					memset(buf, 0, iResult);
-				}
+		if (command.find("dir") != NOT_FOUND || command.find("ls") != NOT_FOUND) {
+			while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
+				cout << buf;
+				memset(buf, 0, iResult);
 			}
-
-			//GET Command
-			else if (command.find("get") != NOT_FOUND)
-				get(AcceptSocket, dstFileName);
-
-			//PUT Command
-			else if (command.find("put") != NOT_FOUND)
-				put(AcceptSocket, srcFileName);
 		}
+
+		//GET Command
+		else if (command.find("get") != NOT_FOUND)
+			get(AcceptSocket, dstFileName);
+
+		//PUT Command
+		else if (command.find("put") != NOT_FOUND)
+			put(AcceptSocket, srcFileName);
 
 		closesocket(AcceptSocket);
 	}
 
 	if ((iResult = closesocket(DataSocket)) == SOCKET_ERROR) {
-		cout << "Close socket error :" << WSAGetLastError() << endl;
 		ex.setErrorCode(2);
 		throw ex;
 	}
@@ -510,7 +504,7 @@ void IHandleCommand::portRelatedCommands(string command)
 	}
 }
 
-void IHandleCommand::get(SOCKET AcceptSocket, string dstFileName)
+void IHandleCommand::get(SOCKET DataSocket, string dstFileName)
 {
 	int iResult;
 	char buf[BUFSIZ + 1];
@@ -518,7 +512,7 @@ void IHandleCommand::get(SOCKET AcceptSocket, string dstFileName)
 	ofstream outputFile;
 	outputFile.open(dstFileName.c_str(), ios::out | ios::binary | ios::trunc);
 
-	while ((iResult = recv(AcceptSocket, buf, BUFSIZ, 0)) > 0) {
+	while ((iResult = recv(DataSocket, buf, BUFSIZ, 0)) > 0) {
 		outputFile.write(buf, iResult);
 		memset(buf, 0, iResult);
 	}
@@ -526,7 +520,7 @@ void IHandleCommand::get(SOCKET AcceptSocket, string dstFileName)
 	outputFile.close();
 }
 
-void IHandleCommand::put(SOCKET AcceptSocket, string srcFileName)
+void IHandleCommand::put(SOCKET DataSocket, string srcFileName)
 {
 	char buf[BUFSIZ + 1];
 
@@ -542,12 +536,12 @@ void IHandleCommand::put(SOCKET AcceptSocket, string srcFileName)
 	while (length > BUFSIZ)
 	{
 		inputFile.read(buf, BUFSIZ);
-		send(AcceptSocket, buf, BUFSIZ, 0);
+		send(DataSocket, buf, BUFSIZ, 0);
 		length -= BUFSIZ;
 	}
 
 	inputFile.read(buf, length);
-	send(AcceptSocket, buf, length, 0);
+	send(DataSocket, buf, length, 0);
 
 	inputFile.close();
 }
@@ -579,7 +573,7 @@ void IHandleCommand::lcd(string command)
 
 	if (!(dwAttrib != INVALID_FILE_ATTRIBUTES &&
 		(dwAttrib & FILE_ATTRIBUTE_DIRECTORY))) {
-		cout << newDir << ": File not found" << endl;
+		cout << newDir << ": Not found" << endl;
 		return;
 	}
 
@@ -711,8 +705,7 @@ void IHandleCommand::getFileListInCurrentDir(vector<string> &fileList, const str
 	hFind = FindFirstFile(szDir, &ffd);
 
 	if (hFind == INVALID_HANDLE_VALUE) {
-		ex.setErrorCode(3);
-		throw ex;
+		return;
 	}
 	do
 	{
